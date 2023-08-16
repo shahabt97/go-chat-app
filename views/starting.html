@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WebSocket Example</title>
+  </head>
+  <body>
+    <h1>WebSocket Example</h1>
+
+    <script>
+      const socket = new WebSocket("ws://localhost:8080/ws");
+
+      let id = Math.floor(Math.random() * 1000000);
+
+      socket.onopen = () => {
+        console.log("WebSocket connection opened.");
+        console.log("this is socket: ", socket);
+        const dataObject = {
+          id,
+          name: "John",
+          age: 30,
+          city: "New York",
+        };
+        socket.send(JSON.stringify(dataObject));
+      };
+
+      socket.onmessage = (event) => {
+        console.log("Received message:", event.data);
+      };
+
+      socket.onclose = () => {
+        console.log("WebSocket connection closed.");
+      };
+    </script>
+  </body>
+</html>

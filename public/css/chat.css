@@ -1,0 +1,144 @@
+body {
+  background-color: #f1f1f1;
+  font-family: Arial, sans-serif;
+}
+/* .chat-box {
+  position: relative;
+} */
+
+.logout-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #f2f2f2;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.logout-container button {
+  background-color: #e53935;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px;
+  background-color: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+.logout-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+.chat-box {
+  height: 400px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  overflow-y: scroll;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.message {
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+.message .sender {
+  font-weight: bold;
+  color: #4caf50;
+  margin-bottom: 5px;
+}
+
+.message .timestamp {
+  font-size: 0.8em;
+  color: #888;
+}
+
+.message p {
+  margin: 5px 0;
+  color: #333;
+}
+
+.input-box {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px;
+  display: flex;
+  margin-bottom: 30px;
+}
+
+.input-box input[type="text"] {
+  flex: 1;
+  padding: 15px;
+  border: none;
+  border-radius: 20px;
+  background-color: #f5f5f5;
+  color: #333;
+  font-size: 1em;
+}
+
+.input-box input[type="submit"] {
+  padding: 15px 30px;
+  margin-left: 20px;
+  background-color: #4caf50;
+  border: none;
+  color: #fff;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: background-color 0.3s ease;
+}
+
+.input-box input[type="submit"]:hover {
+  background-color: #45a049;
+}
+
+.online-users {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.online-users h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 1.2em;
+  text-align: center;
+}
+
+.online-users ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.online-users li {
+  margin-bottom: 10px;
+  color: #555;
+  display: flex;
+  align-items: center;
+}
+
+.online-users li:before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #4caf50;
+  margin-right: 10px;
+}
