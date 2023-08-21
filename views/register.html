@@ -2,13 +2,13 @@
 <html>
   <head>
     <title>Register</title>
-    <link rel="stylesheet" href="css/login.css" />
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="/public/css/login.css" />
+    <link rel="shortcut icon" href="/public/favicon.ico" type="image/x-icon" />
   </head>
   <body>
     <div class="container">
       <h2>Sign up</h2>
-      <form action="/register" method="POST">
+      <form action="/user/register" method="POST">
         <input type="text" name="username" placeholder="Username" required />
         <input type="email" name="email" placeholder="Email" required />
         <input
@@ -19,7 +19,7 @@
         />
         <input type="submit" value="Sign up" />
       </form>
-      <p>Don't have an account? <a href="#">Sign up</a></p>
+      <p>Already have an account? <a href="/user/login">Login</a></p>
     </div>
   </body>
 </html>
