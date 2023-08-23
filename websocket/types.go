@@ -20,7 +20,7 @@ type Msg struct {
 type MessageContent struct {
 	Message   string    `json:"message"`
 	Username  string    `json:"username"`
-	UserId    int       `json:"userId"`
+	// UserId    int       `json:"userId"`
 	Timestamp time.Time `json:"timestamp"`
 }
 

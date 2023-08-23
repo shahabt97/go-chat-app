@@ -14,3 +14,5 @@ var client, _ = mongo.Connect(context.Background(), clientOptions)
 
 var chat = client.Database("chat")
 var Users = chat.Collection("users")
+var PvMessages = chat.Collection("pv-messages")
+var PubMessages = chat.Collection("public-messages")

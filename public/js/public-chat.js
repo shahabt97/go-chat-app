@@ -1,8 +1,20 @@
 async function init() {
+
+  // find user ID
+  const data = await axios.get(
+    "http://localhost:8080/user/get-user-id"
+  );
+  console.log(data);
+
+  // const messages = await axios.get(
+  //   "http://localhost:8080/get-messages?&status=public"
+  // );
+
+
   // Connect to Socket.IO server
   const socket = new WebSocket("ws://localhost:8080/ws");
-  let id = Math.floor(Math.random() * 1000000);
-  let username = Math.floor(Math.random() * 1000000).toString();
+  let id = data.data.id;
+  let username = data.data.username;
 
   const inputBoxForm = document.getElementById("inputBoxForm");
   const submitButton = document.getElementById("submitButton");
@@ -31,7 +43,7 @@ async function init() {
   function sendMessage() {
     const messageInput = document.getElementById("messageInput");
     const message = messageInput.value.trim();
-    const userId = id; // Replace with the actual username
+    // const userId = id; // Replace with the actual username
     const timestamp = new Date(); // Get the current timestamp
 
     if (message !== "") {
@@ -39,7 +51,7 @@ async function init() {
       const messageData = {
         message,
         username,
-        userId,
+        // userId,
         timestamp,
       };
 

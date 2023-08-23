@@ -3,12 +3,14 @@ package controllers
 import (
 	"context"
 	"first/database"
+	"first/session"
 	"first/utils"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/sessions"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -81,6 +83,7 @@ func LoginHandler(c *gin.Context) {
 
 	// data of the user that we want
 	userData := &struct {
+		ID       string `bson:"_id"`
 		Username string `bson:"username"`
 		Password string `bson:"password"`
 	}{}
@@ -103,13 +106,39 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusAccepted, gin.H{
-		"username": userData.Username,
-		"password": userData.Password,
-	})
+	session, _ := session.Store.Get(c.Request, "log-session")
+	session.Options.MaxAge = int(12 * 24 * time.Hour / time.Second)
+	session.Values["username"] = userData.Username
+	session.Values["id"] = userData.ID
+	err_saving_session := session.Save(c.Request, c.Writer)
+	if err_saving_session != nil {
+		fmt.Println("err: ", err_saving_session)
+		return
+	}
+
+	c.Redirect(301, "/chat/public")
 
 }
 
 func GetLoginPage(c *gin.Context) {
 	c.File("views/login.html")
+}
+
+func GetUserInfoFromSession(c *gin.Context) {
+
+	fmt.Println("hiii youuuu")
+	sessionRaw, exists := c.Get("session")
+	if !exists {
+		c.JSON(403, nil)
+		return
+	}
+	session, ok := sessionRaw.(*sessions.Session)
+	if !ok {
+		c.JSON(500, nil)
+		return
+	}
+	c.JSON(200, gin.H{
+		"username": session.Values["username"],
+		"id":       session.Values["id"],
+	})
 }
