@@ -41,7 +41,10 @@ func HandleConn(c *gin.Context) {
 		return
 	}
 	defer conn.Close()
-	fmt.Println("conn", conn.LocalAddr().String())
+	// fmt.Println("conn", conn.LocalAddr().String())
+	id := c.Query("id")
+	username := c.Query("username")
+	fmt.Println("hi Allllll: ", id, username)
 	Clients[conn] = true
 	for {
 		messageType, p, err := conn.ReadMessage()
@@ -50,7 +53,7 @@ func HandleConn(c *gin.Context) {
 		if err2 != nil {
 			fmt.Println(err2)
 		} else {
-			fmt.Println("hiii: ", jsonData)
+			// fmt.Println("hiii: ", jsonData)
 		}
 		if err != nil {
 			log.Println(err)
@@ -60,7 +63,10 @@ func HandleConn(c *gin.Context) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			database.PubMessages.InsertOne(ctx, bson.M{
-				"sender":    jsonData.Id,
+				"sender": bson.M{
+					"username": username,
+					"id":       id,
+				},
 				"message":   jsonData.Data.Message,
 				"CreatedAt": jsonData.Data.Timestamp,
 			})

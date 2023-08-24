@@ -40,6 +40,9 @@ func main() {
 	chatRoutes := routes.Group("chat")
 	chatRoutes.Use(auth.AuthHandler)
 	chatRoutes.GET("/public", controllers.PublicChatHandler)
+	chatRoutes.GET("/get-messages", controllers.GetMessages)
+
+	
 
 	// static files
 	routes.Static("/public", "public")

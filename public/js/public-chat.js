@@ -1,20 +1,20 @@
 async function init() {
-
   // find user ID
-  const data = await axios.get(
-    "http://localhost:8080/user/get-user-id"
-  );
+  const data = await axios.get("http://localhost:8080/user/get-user-id");
   console.log(data);
 
-  // const messages = await axios.get(
-  //   "http://localhost:8080/get-messages?&status=public"
-  // );
-
+  const messages = await axios.get(
+    "http://localhost:8080/chat/get-messages?&status=public"
+  );
+  await getMessages(messages.data);
+  console.log("messages: ", messages);
 
   // Connect to Socket.IO server
-  const socket = new WebSocket("ws://localhost:8080/ws");
   let id = data.data.id;
   let username = data.data.username;
+  const socket = new WebSocket(
+    `ws://localhost:8080/ws?username=${username}&id=${id}`
+  );
 
   const inputBoxForm = document.getElementById("inputBoxForm");
   const submitButton = document.getElementById("submitButton");
@@ -85,21 +85,38 @@ async function init() {
 
   // Listen for 'newMessage' event from the server
   socket.onmessage = (event) => {
-
-  const data =  JSON.parse(event.data.toString())
+    const data = JSON.parse(event.data.toString());
     console.log("data: ", data);
     if (data.eventName == "chat message") {
       receiveMessage(data.data);
     }
   };
+
+  async function getMessages(messages) {
+    const chatBox = document.getElementById("chatBox");
+    //   messageElement.classList.add("message");
+    // console.log(messages);
+    for (let i = 0; i < messages.length; i++) {
+      const messageElement = document.createElement("div");
+      messageElement.innerHTML = `<div class="message">
+  <span class="sender">${messages[i].sender.username}:</span>
+  <span class="timestamp">${formatDate(messages[i].createdAt)}</span>
+  <p>${messages[i].message}</p>`;
+
+      chatBox.appendChild(messageElement);
+    }
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // Create HTML structure for the message
+  }
 }
 
 function formatDate(dateTimeStr) {
   // const date = new Date();
-
+console.log("dateTimeStr: ",dateTimeStr)
   // Format in ISO format
   const date = new Date(dateTimeStr);
-  // console.log(date);
+  console.log("date: ",date);
   const options = { hour: "numeric", minute: "numeric", weekday: "long" };
   const formattedTime = date.toLocaleString("en-US", options);
   // console.log(formattedTime);
