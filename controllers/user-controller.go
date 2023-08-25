@@ -126,7 +126,6 @@ func GetLoginPage(c *gin.Context) {
 
 func GetUserInfoFromSession(c *gin.Context) {
 
-	fmt.Println("hiii youuuu")
 	sessionRaw, exists := c.Get("session")
 	if !exists {
 		c.JSON(403, nil)

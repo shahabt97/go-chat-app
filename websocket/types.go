@@ -14,6 +14,7 @@ var Upgrader = websocket.Upgrader{
 type Msg struct {
 	MessageType int
 	Message     []byte
+	Username    string
 }
 
 type MessageContent struct {
@@ -27,4 +28,11 @@ type Event struct {
 	Id        string         `json:"id"`
 	EventName string         `json:"eventName"`
 	Data      MessageContent `json:"data"`
+}
+
+type OnlineUsersEvent struct {
+	EventName string `json:"eventName"`
+	Data      struct {
+		OnlineUsers []string 
+	} `json:"data"`
 }

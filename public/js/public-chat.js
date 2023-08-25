@@ -6,8 +6,8 @@ async function init() {
   const messages = await axios.get(
     "http://localhost:8080/chat/get-messages?&status=public"
   );
-  await getMessages(messages.data);
   console.log("messages: ", messages);
+  await getMessages(messages.data);
 
   // Connect to Socket.IO server
   let id = data.data.id;
@@ -90,6 +90,15 @@ async function init() {
     if (data.eventName == "chat message") {
       receiveMessage(data.data);
     }
+    if (data.eventName == "online users") {
+      onlineUsers.innerHTML = "";
+      for (const usernamee of data.data.OnlineUsers) {
+        console.log("usernamee: ", usernamee);
+        onlineUsers.innerHTML += `
+          <li><span></span><a href="/pv-chat/${usernamee}" target="_blank">${usernamee}</a></li>
+        `;
+      }
+    }
   };
 
   async function getMessages(messages) {
@@ -112,17 +121,10 @@ async function init() {
 }
 
 function formatDate(dateTimeStr) {
-  // const date = new Date();
-console.log("dateTimeStr: ",dateTimeStr)
   // Format in ISO format
   const date = new Date(dateTimeStr);
-  console.log("date: ",date);
   const options = { hour: "numeric", minute: "numeric", weekday: "long" };
   const formattedTime = date.toLocaleString("en-US", options);
-  // console.log(formattedTime);
-
-  // const [dayOfWeek, time] = formattedTime.split(",");
-  // const [hour, minute] = time.split(":");
 
   return formattedTime;
 }

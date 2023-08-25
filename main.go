@@ -3,19 +3,19 @@ package main
 import (
 	"first/controllers"
 	"first/controllers/auth"
+	"first/database"
 	"first/session"
 	websocketServer "first/websocket"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/sessions"
 )
 
-var store = sessions.NewCookieStore([]byte("SESSION_KEY"))
 
 func main() {
 
 	routes := gin.Default()
+	database.UtilsInitializations()
 
 	// handling websocket
 	websocketServer.Websocket(routes)
