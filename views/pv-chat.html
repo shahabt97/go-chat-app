@@ -2,8 +2,8 @@
 <html>
   <head>
     <title> PV chat with </title>
-    <link rel="stylesheet" href="/css/chat.css" />
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="/public/css/chat.css" />
+    <link rel="shortcut icon" href="/public/favicon.ico" type="image/x-icon" />
   </head>
   <body onload="init()">
     <div class="container">
@@ -22,7 +22,7 @@
         <input type="submit" value="Send" id="submitButton" />
       </form>
       <div class="logout-container">
-        <form action="/logout" method="GET">
+        <form action="/user/logout" method="GET">
           <button type="submit">Logout</button>
         </form>
       </div>
@@ -37,9 +37,11 @@
         <!-- </ul>
       </div> -->
     </div>
-    <script src="/js/axios.js"></script>
-    <script src="/js/socket.io.min.js"></script>
-    <script src="/js/pv-chat.js"></script>
+    <script src="/public/js/axios.js"></script>
+    <script src="/public/js/socket.io.min.js"></script>
+    <script src="/public/js/pv-chat.js"></script>
+    <script src="/public/js/hosts.js"></script>
+
 
   </body>
 </html>

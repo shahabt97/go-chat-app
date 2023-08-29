@@ -1,17 +1,19 @@
 async function init() {
   const path = window.location.pathname;
-  const hostUser = path.split("/")[2];
-  const data = await axios.get(`http://${hostAndPort}/get-user-id`);
+  const hostUser = path.split("/")[3];
+  const data = await axios.get(`http://${hostAndPort}/user/get-user-id`);
 
   const messages = await axios.get(
-    `http://${hostAndPort}/get-messages?hostUser=${hostUser}&username=${data.data.username}&status=pv`
+    `http://${hostAndPort}/chat/get-messages?hostUser=${hostUser}&username=${data.data.username}&status=pv`
   );
   console.log(messages);
   await getMessages(messages.data);
 
   // Connect to Socket.IO server
-  const socket = io(
-    `/pv-chat?hostUser=${hostUser}&username=${data.data.username}`
+  let id = data.data.id;
+  let username = data.data.username;
+  const socket = new WebSocket(
+    `ws://${hostAndPort}/ws/pv?username=${username}&host=${hostUser}`
   );
 
   const inputBoxForm = document.getElementById("inputBoxForm");
@@ -20,7 +22,6 @@ async function init() {
 
   inputBoxForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    console.log("hiiiiiirrrrr")
     sendMessage();
   });
   submitButton.addEventListener("click", (e) => {
@@ -28,39 +29,31 @@ async function init() {
     sendMessage();
   });
 
-  socket.on("online", (users) => {
-    onlineUsers.innerHTML = "";
-
-    for (const socketId in users) {
-      if (users[socketId] !== data.data.username)
-        onlineUsers.innerHTML += `
-              <li><span></span><a href="/pv-chat/${users[socketId]}" target="_blank">${users[socketId]}</a></li>
-            `;
-    }
-  });
-
   // Function to send a new message
   function sendMessage() {
     const messageInput = document.getElementById("messageInput");
     const message = messageInput.value.trim();
-    const username = data.data.username;
-    const userId = data.data.id; // Replace with the actual username
+    // const userId = id; // Replace with the actual username
     const timestamp = new Date(); // Get the current timestamp
 
     if (message !== "") {
       // Create an object with the message, username, and timestamp
       const messageData = {
         message,
-        username,
-        userId,
+        sender: username,
+        receiver: hostUser,
         timestamp,
       };
-      console.log(messageData);
+
       // Emit the 'newMessage' event to the server with the message data
-      if (data.data.id) {
-        socket.emit("chat message", messageData);
-        messageInput.value = ""; // Clear the input field
-      }
+      socket.send(
+        JSON.stringify({
+          id,
+          eventName: "chat message",
+          data: messageData,
+        })
+      );
+      messageInput.value = ""; // Clear the input field
     }
   }
 
@@ -72,7 +65,7 @@ async function init() {
 
     // Create HTML structure for the message
     messageElement.innerHTML = `<div class="message">
-              <span class="sender">${messageData.username}:</span>
+              <span class="sender">${messageData.sender}:</span>
               <span class="timestamp">${formatDate(
                 messageData.timestamp
               )}</span>
@@ -83,9 +76,13 @@ async function init() {
   }
 
   // Listen for 'newMessage' event from the server
-  socket.on("chat message", (messageData) => {
-    receiveMessage(messageData);
-  });
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data.toString());
+    console.log("data: ", data);
+    if (data.eventName == "chat message") {
+      receiveMessage(data.data);
+    }
+  };
 
   async function getMessages(messages) {
     const chatBox = document.getElementById("chatBox");
@@ -94,8 +91,8 @@ async function init() {
     for (let i = 0; i < messages.length; i++) {
       const messageElement = document.createElement("div");
       messageElement.innerHTML = `<div class="message">
-      <span class="sender">${messages[i].sender.username}:</span>
-      <span class="timestamp">${formatDate(messages[i].createdAT)}</span>
+      <span class="sender">${messages[i].sender}:</span>
+      <span class="timestamp">${formatDate(messages[i].createdAt)}</span>
       <p>${messages[i].message}</p>`;
 
       chatBox.appendChild(messageElement);

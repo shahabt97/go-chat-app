@@ -1,8 +1,12 @@
 package controllers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"first/database"
+
+	"first/elasticsearch"
 	"first/session"
 	"first/utils"
 	"fmt"
@@ -12,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // register
@@ -39,19 +44,40 @@ func RegisterHandler(c *gin.Context) {
 		})
 		return
 	}
-	_, err := database.Users.InsertOne(ctx, bson.M{
-		"username": registerData.Username,
-		"email":    registerData.Email,
-		"password": password,
+
+	result, err := database.Users.InsertOne(ctx, bson.D{
+		{Key: "username", Value: registerData.Username},
+		{Key: "email", Value: registerData.Email},
+		{Key: "password", Value: password},
+		{Key: "joinedAt", Value: time.Now()},
 	})
 	if err != nil {
 		fmt.Println("error in inserting user data in database: ", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Database error",
+			"message": "Server error",
 		})
 		return
 	}
-	fmt.Println(registerData)
+
+	userDataForElastic := &elasticsearch.UserIndex{
+		Id:       result.InsertedID.(primitive.ObjectID).Hex(),
+		Username: registerData.Username,
+		Email:    registerData.Email,
+	}
+
+	go func(data *elasticsearch.UserIndex) {
+		jsonData, err := json.Marshal(userDataForElastic)
+		if err != nil {
+			fmt.Println("Error in Marshaling user data for elastic: ", err)
+			return
+		}
+		dataReader := bytes.NewReader(jsonData)
+		errOfEs := elasticsearch.Client.CreateDoc("users", dataReader)
+		if errOfEs != nil {
+			fmt.Println("Error in creating user in elastic: ", errOfEs)
+			return
+		}
+	}(userDataForElastic)
 	c.Redirect(http.StatusFound, "http://localhost:8080/user/login")
 }
 
@@ -140,4 +166,16 @@ func GetUserInfoFromSession(c *gin.Context) {
 		"username": session.Values["username"],
 		"id":       session.Values["id"],
 	})
+}
+
+func LogoutHandler(c *gin.Context) {
+	sessionRaw, _ := c.Get("session")
+	session, _ := sessionRaw.(*sessions.Session)
+	session.Options.MaxAge = -1
+	session.Save(c.Request, c.Writer)
+	c.Redirect(302, "/")
+}
+
+func RegisterPage(c *gin.Context) {
+	c.File("views/register.html")
 }

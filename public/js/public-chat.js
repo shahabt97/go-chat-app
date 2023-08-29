@@ -1,10 +1,10 @@
 async function init() {
   // find user ID
-  const data = await axios.get("http://localhost:8080/user/get-user-id");
+  const data = await axios.get(`http://${hostAndPort}/user/get-user-id`);
   console.log(data);
 
   const messages = await axios.get(
-    "http://localhost:8080/chat/get-messages?&status=public"
+    `http://${hostAndPort}/chat/get-messages?&status=public`
   );
   console.log("messages: ", messages);
   await getMessages(messages.data);
@@ -13,7 +13,7 @@ async function init() {
   let id = data.data.id;
   let username = data.data.username;
   const socket = new WebSocket(
-    `ws://localhost:8080/ws?username=${username}&id=${id}`
+    `ws://${hostAndPort}/ws?username=${username}&id=${id}`
   );
 
   const inputBoxForm = document.getElementById("inputBoxForm");
@@ -93,10 +93,13 @@ async function init() {
     if (data.eventName == "online users") {
       onlineUsers.innerHTML = "";
       for (const usernamee of data.data.OnlineUsers) {
-        console.log("usernamee: ", usernamee);
-        onlineUsers.innerHTML += `
-          <li><span></span><a href="/pv-chat/${usernamee}" target="_blank">${usernamee}</a></li>
+        if (username !== usernamee) {
+          console.log("usernamee: ", usernamee);
+          console.log("username: ", username);
+          onlineUsers.innerHTML += `
+          <li><span></span><a href="/chat/pv/${usernamee}" target="_blank">${usernamee}</a></li>
         `;
+        }
       }
     }
   };

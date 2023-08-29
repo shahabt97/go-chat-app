@@ -16,6 +16,18 @@ type Msg struct {
 	Message     []byte
 	Username    string
 }
+type PvMsg struct {
+	MessageType int
+	Message     []byte
+	Username    string
+	Host        string
+}
+type PvMessageContent struct {
+	Message   string    `json:"message"`
+	Sender    string    `json:"sender"`
+	Receiver  string    `json:"receiver"`
+	Timestamp time.Time `json:"timestamp"`
+}
 
 type MessageContent struct {
 	Message  string `json:"message"`
@@ -30,9 +42,20 @@ type Event struct {
 	Data      MessageContent `json:"data"`
 }
 
+type PvEvent struct {
+	Id        string           `json:"id"`
+	EventName string           `json:"eventName"`
+	Data      PvMessageContent `json:"data"`
+}
+
 type OnlineUsersEvent struct {
 	EventName string `json:"eventName"`
 	Data      struct {
-		OnlineUsers []string 
+		OnlineUsers []string
 	} `json:"data"`
+}
+
+type PvConnection struct {
+	Username string
+	Host     string
 }

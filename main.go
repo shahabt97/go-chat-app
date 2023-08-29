@@ -11,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 func main() {
 
 	routes := gin.Default()
@@ -24,25 +23,23 @@ func main() {
 	routes.Use(sessiosnMiddleware)
 
 	//homepage
-	routes.GET("/", func(c *gin.Context) {
-		fmt.Println(c.Get("session"))
-		c.File("views/register.html")
-	})
+	routes.GET("/", controllers.HomePageHandler)
 
 	// user
 	UserRoutes := routes.Group("/user")
 	UserRoutes.POST("/register", controllers.RegisterHandler)
+	UserRoutes.GET("/register", controllers.RegisterPage)
 	UserRoutes.POST("/login", controllers.LoginHandler)
 	UserRoutes.GET("/login", controllers.GetLoginPage)
 	UserRoutes.GET("/get-user-id", controllers.GetUserInfoFromSession)
+	UserRoutes.GET("logout", auth.AuthHandler, controllers.LogoutHandler)
 
 	// chat
-	chatRoutes := routes.Group("chat")
+	chatRoutes := routes.Group("/chat")
 	chatRoutes.Use(auth.AuthHandler)
 	chatRoutes.GET("/public", controllers.PublicChatHandler)
 	chatRoutes.GET("/get-messages", controllers.GetMessages)
-
-	
+	chatRoutes.GET("/pv/:username", controllers.PvChatHandler)
 
 	// static files
 	routes.Static("/public", "public")

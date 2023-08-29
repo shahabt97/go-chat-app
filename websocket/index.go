@@ -1,9 +1,11 @@
 package websocketServer
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"first/database"
+	"first/elasticsearch"
 	"fmt"
 	"log"
 	"sync"
@@ -35,8 +37,10 @@ var OnlineUsersChan = make(chan bool, 1024)
 
 func Websocket(routes *gin.Engine) {
 	routes.GET("/ws", HandleConn)
+	routes.GET("/ws/pv", HandlePvConnection)
 	go HandleAllConnections()
 	go HandleOlineUsers()
+	go HandleAllPvConnections()
 }
 
 func HandleAllConnections() {
@@ -101,18 +105,32 @@ func HandleConn(c *gin.Context) {
 			if err != nil {
 				fmt.Println("error in making string of id to ObjectId of mongo: ", err)
 			}
-			database.PubMessages.InsertOne(ctx, bson.M{
-				"sender": bson.M{
-					"username": username,
-					"id":       objectID,
-				},
-				"message":   jsonData.Data.Message,
-				"CreatedAt": jsonData.Data.Timestamp,
-			})
-		}()
 
+			result, _ := database.PubMessages.InsertOne(ctx, bson.D{
+				{Key: "message", Value: jsonData.Data.Message},
+				{Key: "sender", Value: bson.D{
+					{Key: "id", Value: objectID},
+					{Key: "username", Value: username},
+				}},
+				{Key: "createdAt", Value: jsonData.Data.Timestamp},
+			})
+			pubMessageJson := &elasticsearch.PubMessageIndex{
+				Id:      result.InsertedID.(primitive.ObjectID).Hex(),
+				Message: jsonData.Data.Message,
+			}
+			pubJsonBytes, errorOfMar := json.Marshal(pubMessageJson)
+			if errorOfMar != nil {
+				fmt.Println("Error in Marshaling user data for elastic: ", err)
+				return
+			}
+			pubReader := bytes.NewReader(pubJsonBytes)
+			errPubElas := elasticsearch.Client.CreateDoc("pubmessages", pubReader)
+			if errPubElas != nil {
+				fmt.Println("Error in creating user in elastic: ", errPubElas)
+				return
+			}
+		}()
 		Broadcast <- &Msg{MessageType: messageType, Message: p, Username: username}
-		// fmt.Println(string(p), "and", messageType)
 	}
 
 }
