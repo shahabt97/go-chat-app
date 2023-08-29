@@ -91,7 +91,7 @@ func HandlePvConnection(c *gin.Context) {
 				return
 			}
 			pvReader := bytes.NewReader(pvJsonBytes)
-			errPvElas := elasticsearch.Client.CreateDoc("pubmessages", pvReader)
+			errPvElas := elasticsearch.Client.CreateDoc("pv-messages", pvReader)
 			if errPvElas != nil {
 				fmt.Println("Error in creating user in elastic: ", errPvElas)
 				return
