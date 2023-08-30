@@ -8,7 +8,6 @@ import (
 	"first/elasticsearch"
 	"fmt"
 	"log"
-	"sync"
 
 	"time"
 
@@ -18,16 +17,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type PvClientsMutex struct {
-	Clients map[*websocket.Conn]*PvConnection
-	sync.Mutex
-}
-
-var PvClients = &PvClientsMutex{Clients: make(map[*websocket.Conn]*PvConnection)}
-
 var PvBroadcast = make(chan *PvMsg, 1024)
 
-// var Clients = make(map[*websocket.Conn]string)
+var PvClients = make(map[*websocket.Conn]*PvConnection)
 var PvOnlineUsersChan = make(chan bool, 1024)
 
 func HandlePvConnection(c *gin.Context) {
@@ -41,15 +33,11 @@ func HandlePvConnection(c *gin.Context) {
 	username := c.Query("username")
 	host := c.Query("host")
 
-	PvClients.Lock()
-	PvClients.Clients[conn] = &PvConnection{Username: username, Host: host}
-	PvClients.Unlock()
+	PvClients[conn] = &PvConnection{Username: username, Host: host}
 
 	conn.SetCloseHandler(func(code int, text string) error {
-		PvClients.Lock()
-		delete(PvClients.Clients, conn)
+		delete(PvClients, conn)
 		OnlineUsersChan <- true
-		PvClients.Unlock()
 		return nil
 	})
 	for {
@@ -106,10 +94,9 @@ func HandleAllPvConnections() {
 	for {
 		pvMsg := <-PvBroadcast
 		go func() {
-			PvClients.Lock()
-			for client := range PvClients.Clients {
-				if (PvClients.Clients[client].Username == pvMsg.Username) ||
-					(PvClients.Clients[client].Username == pvMsg.Host && PvClients.Clients[client].Host == pvMsg.Username) {
+			for client := range PvClients {
+				if (PvClients[client].Username == pvMsg.Username) ||
+					(PvClients[client].Username == pvMsg.Host && PvClients[client].Host == pvMsg.Username) {
 					go func(cl *websocket.Conn) {
 						if err := cl.WriteMessage(pvMsg.MessageType, pvMsg.Message); err != nil {
 							fmt.Println("error in writing in a client: ", err)
@@ -118,7 +105,6 @@ func HandleAllPvConnections() {
 					}(client)
 				}
 			}
-			PvClients.Unlock()
 		}()
 	}
 }

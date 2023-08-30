@@ -25,17 +25,17 @@ func main() {
 	//homepage
 	routes.GET("/", controllers.HomePageHandler)
 
-	// user
+	// user routes
 	UserRoutes := routes.Group("/user")
 	UserRoutes.POST("/register", controllers.RegisterHandler)
-	UserRoutes.GET("/register", controllers.RegisterPage)
 	UserRoutes.POST("/login", controllers.LoginHandler)
+	UserRoutes.GET("/register", controllers.RegisterPage)
 	UserRoutes.GET("/login", controllers.GetLoginPage)
 	UserRoutes.GET("/get-user-id", controllers.GetUserInfoFromSession)
 	UserRoutes.GET("logout", auth.AuthHandler, controllers.LogoutHandler)
 	UserRoutes.GET("/search", controllers.SearchInUsers)
 
-	// chat
+	// chat routes
 	chatRoutes := routes.Group("/chat")
 	chatRoutes.Use(auth.AuthHandler)
 	chatRoutes.GET("/public", controllers.PublicChatHandler)
