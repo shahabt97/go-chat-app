@@ -33,13 +33,16 @@ func main() {
 	UserRoutes.GET("/login", controllers.GetLoginPage)
 	UserRoutes.GET("/get-user-id", controllers.GetUserInfoFromSession)
 	UserRoutes.GET("logout", auth.AuthHandler, controllers.LogoutHandler)
+	UserRoutes.GET("/search", controllers.SearchInUsers)
 
 	// chat
 	chatRoutes := routes.Group("/chat")
 	chatRoutes.Use(auth.AuthHandler)
 	chatRoutes.GET("/public", controllers.PublicChatHandler)
+	chatRoutes.GET("/public/search", controllers.SearchInPubChat)
 	chatRoutes.GET("/get-messages", controllers.GetMessages)
 	chatRoutes.GET("/pv/:username", controllers.PvChatHandler)
+	chatRoutes.GET("/pv/search", controllers.SearchInPvChat)
 
 	// static files
 	routes.Static("/public", "public")

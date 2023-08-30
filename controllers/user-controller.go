@@ -179,3 +179,18 @@ func LogoutHandler(c *gin.Context) {
 func RegisterPage(c *gin.Context) {
 	c.File("views/register.html")
 }
+
+func SearchInUsers(c *gin.Context) {
+
+	query := c.Query("q")
+
+	res, err := elasticsearch.Client.SearchUser(query, "users")
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(500, gin.H{
+			"message": "Server error",
+		})
+		return
+	}
+	c.JSON(200, res)
+}
