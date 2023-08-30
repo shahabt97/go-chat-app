@@ -5,10 +5,12 @@ import (
 	"first/database"
 	"first/elasticsearch"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func PublicChatHandler(c *gin.Context) {
@@ -164,4 +166,57 @@ func SearchInPvChat(c *gin.Context) {
 	} else {
 		c.JSON(201, []gin.H{})
 	}
+}
+
+func SearchInMongoForPvMes(c *gin.Context) {
+
+	query := c.Query("q")
+	user := c.Query("user")
+	host := c.Query("host")
+	var Array []*database.PvMessage
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	patternOfUser := fmt.Sprintf(`^%s$`, user)
+	patternOfHost := fmt.Sprintf(`^%s$`, host)
+	patternOfMessage := query
+
+	// Create a regex query
+	regexOfMessage := bson.M{"$regex": primitive.Regex{Pattern: patternOfMessage, Options: "i"}}
+	regexOfUser := bson.M{"$regex": primitive.Regex{Pattern: patternOfUser, Options: "i"}}
+	regexOfHost := bson.M{"$regex": primitive.Regex{Pattern: patternOfHost, Options: "i"}}
+
+	filter1 := bson.M{"message": regexOfMessage, "sender": regexOfUser, "receiver": regexOfHost}
+	filter2 := bson.M{"message": regexOfMessage, "sender": regexOfHost, "receiver": regexOfUser}
+
+	combinedFilter := bson.M{"$or": []bson.M{filter1, filter2}}
+	// Perform the find operation
+	cur, err := database.PvMessages.Find(ctx, combinedFilter)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cur.Close(ctx)
+
+	// fmt.Println("cur: ", cur)
+	// Iterate through the results
+	// var results []*database.PvMessage
+	for cur.Next(ctx) {
+
+		var document = &database.PvMessage{}
+		if err := cur.Decode(document); err != nil {
+			fmt.Println("error in reading  results of searched pv messages: ", err)
+			c.JSON(500, gin.H{})
+			return
+		}
+		// fmt.Println("doc: ", document)
+		Array = append(Array, document)
+	}
+	// Print the results
+	// for _, result := range results {
+		fmt.Println(len(Array))
+	// }
+
+	c.JSON(201, Array)
+
 }
