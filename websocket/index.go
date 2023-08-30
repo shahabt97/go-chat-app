@@ -8,7 +8,6 @@ import (
 	"first/elasticsearch"
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,22 +16,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// type OnlineUsersHandligStruct struct {
-// 	status   string
-// 	Conn     *websocket.Conn
-// 	Username string
-// }
 
-type ClientsMutex struct {
-	Clients map[*websocket.Conn]string
-	sync.Mutex
-}
-
-var Clients = &ClientsMutex{Clients: make(map[*websocket.Conn]string)}
+var Clients = make(map[*websocket.Conn]string)
 
 var Broadcast = make(chan *Msg, 1024)
 
-// var Clients = make(map[*websocket.Conn]string)
 var OnlineUsersChan = make(chan bool, 1024)
 
 func Websocket(routes *gin.Engine) {
@@ -47,7 +35,7 @@ func HandleAllConnections() {
 	for {
 		msg := <-Broadcast
 		go func() {
-			for client := range Clients.Clients {
+			for client := range Clients {
 				go func(cl *websocket.Conn) {
 					if err := cl.WriteMessage(msg.MessageType, msg.Message); err != nil {
 						fmt.Println("error in writing in a client: ", err)
@@ -69,21 +57,15 @@ func HandleConn(c *gin.Context) {
 	defer conn.Close()
 	conn.SetCloseHandler(func(code int, text string) error {
 
-		Clients.Lock()
-		delete(Clients.Clients, conn)
+		delete(Clients, conn)
 		OnlineUsersChan <- true
-		Clients.Unlock()
-
-		// fmt.Println("code: ", code, "reason: ", text)
 		return nil
 	})
 	id := c.Query("id")
 	username := c.Query("username")
 
-	Clients.Lock()
-	Clients.Clients[conn] = username
+	Clients[conn] = username
 	OnlineUsersChan <- true
-	Clients.Unlock()
 
 	for {
 		messageType, p, err := conn.ReadMessage()
@@ -139,20 +121,18 @@ func HandleOlineUsers() {
 	for {
 		<-OnlineUsersChan
 		Array := []string{}
-		Clients.Lock()
-		for client := range Clients.Clients {
-			Array = append(Array, Clients.Clients[client])
+		for client := range Clients {
+			Array = append(Array, Clients[client])
 		}
 		onlineUsersEvent := &OnlineUsersEvent{EventName: "online users", Data: struct{ OnlineUsers []string }{OnlineUsers: Array}}
 		onlineEventJson, _ := json.Marshal(onlineUsersEvent)
 
-		for client := range Clients.Clients {
+		for client := range Clients {
 			if err := client.WriteMessage(1, onlineEventJson); err != nil {
 				fmt.Println("error in sending online users: ", err)
 				client.Close()
 			}
 		}
-		Clients.Unlock()
 	}
 
 }
