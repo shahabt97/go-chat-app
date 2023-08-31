@@ -218,3 +218,51 @@ func (client *ElasticClient) SearchPvMessages(q string, user string, host string
 	return hits, nil
 
 }
+
+func (client *ElasticClient) SearchAllMessages(q string, indexes ...string) ([]*AllMessages, error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	query := fmt.Sprintf(`	{
+		"query": {
+		  "match": {
+			"message": "%s"
+		  }
+		}
+	  }`, q)
+	result, err := client.Client.Search(client.Client.Search.WithIndex(indexes...),
+		client.Client.Search.WithContext(ctx),
+		client.Client.Search.WithBody(strings.NewReader(query)))
+
+	if err != nil {
+		return nil, err
+	}
+	res := make(map[string]interface{})
+
+	errInDecode := json.NewDecoder(result.Body).Decode(&res)
+	if errInDecode != nil {
+		return nil, errInDecode
+	}
+
+	hitsRaw := res["hits"].(map[string]interface{})["hits"].([]interface{})
+	var hits []*AllMessages
+	for _, hit := range hitsRaw {
+
+		index := hit.(map[string]interface{})["_index"].(string)
+		data := hit.(map[string]interface{})["_source"].(map[string]interface{})
+		
+		objectID, err := primitive.ObjectIDFromHex(data["id"].(string))
+		if err != nil {
+			return nil, err
+		}
+
+		hits = append(hits, &AllMessages{
+			Index: index,
+			Id:    objectID,
+		})
+	}
+
+	return hits, nil
+
+}

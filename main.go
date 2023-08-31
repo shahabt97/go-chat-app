@@ -43,6 +43,7 @@ func main() {
 	chatRoutes.GET("/get-messages", controllers.GetMessages)
 	chatRoutes.GET("/pv/:username", controllers.PvChatHandler)
 	chatRoutes.GET("/pv/search", controllers.SearchInPvChat)
+	chatRoutes.GET("/search", controllers.SearchAllMessages)
 
 	// static files
 	routes.Static("/public", "public")

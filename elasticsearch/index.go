@@ -1,6 +1,6 @@
 package elasticsearch
 
-import ()
+import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type UserIndex struct {
 	Id       string `json:"id"`
@@ -17,4 +17,8 @@ type PvMessageIndex struct {
 	Message  string `json:"message"`
 	Sender   string `json:"sender"`
 	Receiver string `json:"receiver"`
+}
+type AllMessages struct{
+	Index string
+	Id primitive.ObjectID
 }
