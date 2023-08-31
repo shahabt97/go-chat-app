@@ -16,7 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-
 var Clients = make(map[*websocket.Conn]string)
 
 var Broadcast = make(chan *Msg, 1024)
@@ -39,12 +38,13 @@ func HandleAllConnections() {
 				go func(cl *websocket.Conn) {
 					if err := cl.WriteMessage(msg.MessageType, msg.Message); err != nil {
 						fmt.Println("error in writing in a client: ", err)
+						delete(Clients, cl)
+						OnlineUsersChan <- true
 						cl.Close()
 					}
 				}(client)
 			}
 		}()
-
 	}
 }
 
@@ -60,7 +60,9 @@ func HandleConn(c *gin.Context) {
 		delete(Clients, conn)
 		OnlineUsersChan <- true
 		return nil
+
 	})
+
 	id := c.Query("id")
 	username := c.Query("username")
 
@@ -130,9 +132,10 @@ func HandleOlineUsers() {
 		for client := range Clients {
 			if err := client.WriteMessage(1, onlineEventJson); err != nil {
 				fmt.Println("error in sending online users: ", err)
+				delete(Clients, client)
+				OnlineUsersChan <- true
 				client.Close()
 			}
 		}
 	}
-
 }

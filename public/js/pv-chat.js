@@ -33,10 +33,10 @@ async function init() {
   function sendMessage() {
     const messageInput = document.getElementById("messageInput");
     const message = messageInput.value.trim();
-    // const userId = id; // Replace with the actual username
     const timestamp = new Date(); // Get the current timestamp
 
     if (message !== "") {
+
       // Create an object with the message, username, and timestamp
       const messageData = {
         message,
@@ -61,7 +61,6 @@ async function init() {
   function receiveMessage(messageData) {
     const chatBox = document.getElementById("chatBox");
     const messageElement = document.createElement("div");
-    //   messageElement.classList.add("message");
 
     // Create HTML structure for the message
     messageElement.innerHTML = `<div class="message">
@@ -86,8 +85,7 @@ async function init() {
 
   async function getMessages(messages) {
     const chatBox = document.getElementById("chatBox");
-    //   messageElement.classList.add("message");
-    // console.log(messages);
+
     for (let i = 0; i < messages.length; i++) {
       const messageElement = document.createElement("div");
       messageElement.innerHTML = `<div class="message">
@@ -99,21 +97,13 @@ async function init() {
     }
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    // Create HTML structure for the message
   }
 }
 function formatDate(dateTimeStr) {
-  // const date = new Date();
 
   // Format in ISO format
   const date = new Date(dateTimeStr);
-  // console.log(date);
   const options = { hour: "numeric", minute: "numeric", weekday: "long" };
   const formattedTime = date.toLocaleString("en-US", options);
-  // console.log(formattedTime);
-
-  // const [dayOfWeek, time] = formattedTime.split(",");
-  // const [hour, minute] = time.split(":");
-
   return formattedTime;
 }
