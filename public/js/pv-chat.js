@@ -3,15 +3,16 @@ async function init() {
   const hostUser = path.split("/")[3];
   const data = await axios.get(`http://${hostAndPort}/user/get-user-id`);
 
-  const messages = await axios.get(
-    `http://${hostAndPort}/chat/get-messages?hostUser=${hostUser}&username=${data.data.username}&status=pv`
-  );
-  console.log(messages);
-  await getMessages(messages.data);
+  // const messages = await axios.get(
+  //   `http://${hostAndPort}/chat/get-messages?hostUser=${hostUser}&username=${data.data.username}&status=pv`
+  // );
+  // console.log(messages);
+  // await getMessages(messages.data);
 
   // Connect to Socket.IO server
   let id = data.data.id;
   let username = data.data.username;
+  
   const socket = new WebSocket(
     `ws://${hostAndPort}/ws/pv?username=${username}&host=${hostUser}`
   );
@@ -76,11 +77,14 @@ async function init() {
   }
 
   // Listen for 'newMessage' event from the server
-  socket.onmessage = (event) => {
+  socket.onmessage = async (event) => {
     const data = JSON.parse(event.data.toString());
     console.log("data: ", data);
     if (data.eventName == "chat message") {
       receiveMessage(data.data);
+    }
+    if (data.eventName == "all messages") {
+      await getMessages(data.data);
     }
   };
 

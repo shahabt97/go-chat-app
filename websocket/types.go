@@ -1,6 +1,7 @@
 package websocketServer
 
 import (
+	"first/database"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -58,4 +59,14 @@ type OnlineUsersEvent struct {
 type PvConnection struct {
 	Username string
 	Host     string
+}
+
+type AllPubMessages struct {
+	EventName string                    `json:"eventName"`
+	Data      []*database.PublicMessage `json:"data"`
+}
+
+type AllPvMessages struct {
+	EventName string                    `json:"eventName"`
+	Data      []*database.PvMessage `json:"data"`
 }

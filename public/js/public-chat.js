@@ -3,11 +3,11 @@ async function init() {
   const data = await axios.get(`http://${hostAndPort}/user/get-user-id`);
   console.log(data);
 
-  const messages = await axios.get(
-    `http://${hostAndPort}/chat/get-messages?&status=public`
-  );
-  console.log("messages: ", messages);
-  await getMessages(messages.data);
+  // const messages = await axios.get(
+  //   `http://${hostAndPort}/chat/get-messages?&status=public`
+  // );
+  // console.log("messages: ", messages);
+  // await getMessages(messages.data);
 
   // Connect to Socket.IO server
   let id = data.data.id;
@@ -84,11 +84,14 @@ async function init() {
   }
 
   // Listen for 'newMessage' event from the server
-  socket.onmessage = (event) => {
+  socket.onmessage = async (event) => {
     const data = JSON.parse(event.data.toString());
     console.log("data: ", data);
     if (data.eventName == "chat message") {
       receiveMessage(data.data);
+    }
+    if (data.eventName == "all messages") {
+      await getMessages(data.data);
     }
     if (data.eventName == "online users") {
       onlineUsers.innerHTML = "";

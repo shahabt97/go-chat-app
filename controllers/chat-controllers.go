@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	// "encoding/json"
 	"first/database"
 	"first/elasticsearch"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	// "github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -21,68 +23,85 @@ func PvChatHandler(c *gin.Context) {
 	c.File("views/pv-chat.html")
 }
 
-func GetMessages(c *gin.Context) {
-	if c.Query("status") == "public" {
-		var Array []*database.PublicMessage
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		results, err := database.PubMessages.Find(ctx, bson.M{}, database.FindPubMessagesBasedOnCreatedAtIndexOption)
+// func GetPubMessages(conn *websocket.Conn) {
+// 	// if status == "public" {
+// 		var Array []*database.PublicMessage
+// 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+// 		defer cancel()
+// 		results, err := database.PubMessages.Find(ctx, bson.M{}, database.FindPubMessagesBasedOnCreatedAtIndexOption)
 
-		if err != nil {
-			fmt.Println("error in getting all public messages is: ", err)
-			c.JSON(500, gin.H{})
-			return
-		}
+// 		if err != nil {
+// 			fmt.Println("error in getting all public messages is: ", err)
+// 			// c.JSON(500, gin.H{})
+// 			return
+// 		}
 
-		for results.Next(ctx) {
-			var document = &database.PublicMessage{}
-			if err := results.Decode(document); err != nil {
-				fmt.Println("error in reading all results of public messages: ", err)
-				c.JSON(500, gin.H{})
-				return
-			}
-			Array = append(Array, document)
-		}
-		if len(Array) != 0 {
-			c.JSON(201, Array)
-			return
-		} else {
-			c.JSON(201, []gin.H{})
-		}
+// 		for results.Next(ctx) {
+// 			var document = &database.PublicMessage{}
+// 			if err := results.Decode(document); err != nil {
+// 				fmt.Println("error in reading all results of public messages: ", err)
+// 				// c.JSON(500, gin.H{})
+// 				return
+// 			}
+// 			Array = append(Array, document)
+// 		}
 
-	} else if c.Query("status") == "pv" {
-		var Array []*database.PvMessage
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		host := c.Query("hostUser")
-		username := c.Query("username")
-		results, err := database.PvMessages.Find(ctx, bson.D{{Key: "$or", Value: []bson.D{{{Key: "sender", Value: username}, {Key: "receiver", Value: host}},
-			{{Key: "sender", Value: host}, {Key: "receiver", Value: username}}}}}, database.FindPvMessagesOption)
-		if err != nil {
-			fmt.Println("error in getting all pv messages is: ", err)
-			c.JSON(500, gin.H{})
-			return
-		}
+// 		allMessages := &websocketServer.AllPubMessages{
+// 			EventName: "all messages",
+// 			Data: Array,
+// 		}
 
-		for results.Next(ctx) {
-			var document = &database.PvMessage{}
-			if err := results.Decode(document); err != nil {
-				fmt.Println("error in reading all results of public messages: ", err)
-				c.JSON(500, gin.H{})
-				return
-			}
-			Array = append(Array, document)
-		}
-		if len(Array) != 0 {
-			c.JSON(201, Array)
-			return
-		} else {
-			c.JSON(201, []gin.H{})
-		}
+// 		jsonData, errOfMarshaling := json.Marshal(allMessages)
 
-	}
+// 		if errOfMarshaling != nil {
+// 			fmt.Println("error in Marshaling public messages: ", err)
+// 			// c.JSON(500, gin.H{})
+// 			return
+// 		}
+// 		// if len(Array) != 0 {
+// 			if err :=conn.WriteMessage(websocket.TextMessage,jsonData); err != nil{
+// 				conn.Close()
+// 				return
+// 			// }
+// 		} 
+		// else {
+		// 	c.JSON(201, []gin.H{})
+		// }
 
-}
+	// } 
+	// else if c.Query("status") == "pv" {
+	// 	var Array []*database.PvMessage
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// 	defer cancel()
+	// 	host := c.Query("hostUser")
+	// 	username := c.Query("username")
+	// 	results, err := database.PvMessages.Find(ctx, bson.D{{Key: "$or", Value: []bson.D{{{Key: "sender", Value: username}, {Key: "receiver", Value: host}},
+	// 		{{Key: "sender", Value: host}, {Key: "receiver", Value: username}}}}}, database.FindPvMessagesOption)
+	// 	if err != nil {
+	// 		fmt.Println("error in getting all pv messages is: ", err)
+	// 		c.JSON(500, gin.H{})
+	// 		return
+	// 	}
+
+	// 	for results.Next(ctx) {
+	// 		var document = &database.PvMessage{}
+	// 		if err := results.Decode(document); err != nil {
+	// 			fmt.Println("error in reading all results of public messages: ", err)
+	// 			c.JSON(500, gin.H{})
+	// 			return
+	// 		}
+	// 		Array = append(Array, document)
+	// 	}
+	// 	if len(Array) != 0 {
+	// 		c.JSON(201, Array)
+	// 		return
+	// 	} else {
+	// 		c.JSON(201, []gin.H{})
+	// 	}
+
+	// }
+
+// }
 
 func SearchInPubChat(c *gin.Context) {
 
@@ -214,7 +233,7 @@ func SearchInMongoForPvMes(c *gin.Context) {
 	}
 	// Print the results
 	// for _, result := range results {
-		fmt.Println(len(Array))
+	fmt.Println(len(Array))
 	// }
 
 	c.JSON(201, Array)
