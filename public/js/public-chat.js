@@ -4,12 +4,6 @@ async function init() {
   const data = await axios.get(`http://${hostAndPort}/user/get-user-id`);
   console.log(data);
 
-  // const messages = await axios.get(
-  //   `http://${hostAndPort}/chat/get-messages?&status=public`
-  // );
-  // console.log("messages: ", messages);
-  // await getMessages(messages.data);
-
   // Connect to Socket.IO server
   let id = data.data.id;
   let username = data.data.username;
