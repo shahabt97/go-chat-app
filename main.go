@@ -40,7 +40,7 @@ func main() {
 	chatRoutes.Use(auth.AuthHandler)
 	chatRoutes.GET("/public", controllers.PublicChatHandler)
 	chatRoutes.GET("/public/search", controllers.SearchInPubChat)
-	chatRoutes.GET("/get-messages", controllers.GetMessages)
+	// chatRoutes.GET("/get-messages", controllers.GetMessages)
 	chatRoutes.GET("/pv/:username", controllers.PvChatHandler)
 	chatRoutes.GET("/pv/search", controllers.SearchInPvChat)
 	chatRoutes.GET("/search", controllers.SearchAllMessages)

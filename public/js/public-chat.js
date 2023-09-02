@@ -4,28 +4,12 @@ async function init() {
   const data = await axios.get(`http://${hostAndPort}/user/get-user-id`);
   console.log(data);
 
-  const messages = await axios.get(
-    `http://${hostAndPort}/chat/get-messages?&status=public`
-  );
-  console.log("messages: ", messages);
-  await getMessages(messages.data);
+  // const messages = await axios.get(
+  //   `http://${hostAndPort}/chat/get-messages?&status=public`
+  // );
+  // console.log("messages: ", messages);
+  // await getMessages(messages.data);
 
-  async function getMessages(messages) {
-    const chatBox = document.getElementById("chatBox");
-
-    for (let i = 0; i < messages.length; i++) {
-      const messageElement = document.createElement("div");
-      messageElement.innerHTML = `<div class="message">
-<span class="sender">${messages[i].sender.username}:</span>
-<span class="timestamp">${formatDate(messages[i].createdAt)}</span>
-<p>${messages[i].message}</p>`;
-
-      chatBox.appendChild(messageElement);
-    }
-    chatBox.scrollTop = chatBox.scrollHeight;
-
-    // Create HTML structure for the message
-  }
   // Connect to Socket.IO server
   let id = data.data.id;
   let username = data.data.username;
@@ -96,20 +80,23 @@ async function init() {
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // Listen for 'newMessage' event from the server
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data.toString());
-      console.log("data: ", data);
-      if (data.eventName == "chat message") {
-        receiveMessage(data.data);
-      }
-      if (data.eventName == "online users") {
-        onlineUsers.innerHTML = "";
-        for (const usernamee of data.data.OnlineUsers) {
-          if (username !== usernamee) {
-            console.log("usernamee: ", usernamee);
-            console.log("username: ", username);
-            onlineUsers.innerHTML += `
+  // Listen for 'newMessage' event from the server
+  socket.onmessage = async (event) => {
+    const data = JSON.parse(event.data.toString());
+    console.log("data: ", data);
+    if (data.eventName == "chat message") {
+      receiveMessage(data.data);
+    }
+    if (data.eventName == "all messages") {
+      await getMessages(data.data);
+    }
+    if (data.eventName == "online users") {
+      onlineUsers.innerHTML = "";
+      for (const usernamee of data.data.OnlineUsers) {
+        if (username !== usernamee) {
+          console.log("usernamee: ", usernamee);
+          console.log("username: ", username);
+          onlineUsers.innerHTML += `
           <li><span></span><a href="/chat/pv/${usernamee}" target="_blank">${usernamee}</a></li>
         `;
           }

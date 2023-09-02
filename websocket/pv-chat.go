@@ -35,6 +35,8 @@ func HandlePvConnection(c *gin.Context) {
 
 	PvClients[conn] = &PvConnection{Username: username, Host: host}
 
+	go GetPvMessages(username, host, conn)
+
 	conn.SetCloseHandler(func(code int, text string) error {
 		delete(PvClients, conn)
 		OnlineUsersChan <- true
@@ -107,4 +109,49 @@ func HandleAllPvConnections() {
 			}
 		}()
 	}
+}
+
+func GetPvMessages(username, host string, conn *websocket.Conn) {
+
+	var Array = []*database.PvMessage{}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	results, err := database.PvMessages.Find(ctx, bson.D{{Key: "$or", Value: []bson.D{{{Key: "sender", Value: username}, {Key: "receiver", Value: host}},
+		{{Key: "sender", Value: host}, {Key: "receiver", Value: username}}}}}, database.FindPvMessagesOption)
+	if err != nil {
+		fmt.Println("error in getting all pv messages is: ", err)
+		// c.JSON(500, gin.H{})
+		return
+	}
+
+	for results.Next(ctx) {
+		var document = &database.PvMessage{}
+		if err := results.Decode(document); err != nil {
+			fmt.Println("error in reading all results of public messages: ", err)
+			// c.JSON(500, gin.H{})
+			return
+		}
+		Array = append(Array, document)
+	}
+
+	allMessages := &AllPvMessages{
+		EventName: "all messages",
+		Data:      Array,
+	}
+
+	jsonData, errOfMarshaling := json.Marshal(allMessages)
+
+	if errOfMarshaling != nil {
+		fmt.Println("error in Marshaling pv messages: ", err)
+		// c.JSON(500, gin.H{})
+		return
+	}
+	// if len(Array) != 0 {
+	if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
+		conn.Close()
+		return
+		// }
+	}
+
 }

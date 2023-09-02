@@ -65,9 +65,12 @@ func HandleConn(c *gin.Context) {
 
 	id := c.Query("id")
 	username := c.Query("username")
+	// status := c.Query("status")
 
 	Clients[conn] = username
 	OnlineUsersChan <- true
+
+	go GetPubMessages(conn)
 
 	for {
 		messageType, p, err := conn.ReadMessage()
@@ -130,12 +133,53 @@ func HandleOlineUsers() {
 		onlineEventJson, _ := json.Marshal(onlineUsersEvent)
 
 		for client := range Clients {
-			if err := client.WriteMessage(1, onlineEventJson); err != nil {
+			if err := client.WriteMessage(websocket.TextMessage, onlineEventJson); err != nil {
 				fmt.Println("error in sending online users: ", err)
 				delete(Clients, client)
 				OnlineUsersChan <- true
 				client.Close()
 			}
 		}
+	}
+}
+
+func GetPubMessages(conn *websocket.Conn) {
+	// if status == "public" {
+	var Array = []*database.PublicMessage{}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	results, err := database.PubMessages.Find(ctx, bson.M{}, database.FindPubMessagesBasedOnCreatedAtIndexOption)
+
+	if err != nil {
+		fmt.Println("error in getting all public messages is: ", err)
+		// c.JSON(500, gin.H{})
+		return
+	}
+
+	for results.Next(ctx) {
+		var document = &database.PublicMessage{}
+		if err := results.Decode(document); err != nil {
+			fmt.Println("error in reading all results of public messages: ", err)
+			// c.JSON(500, gin.H{})
+			return
+		}
+		Array = append(Array, document)
+	}
+
+	allMessages := &AllPubMessages{
+		EventName: "all messages",
+		Data:      Array,
+	}
+
+	jsonData, errOfMarshaling := json.Marshal(allMessages)
+
+	if errOfMarshaling != nil {
+		fmt.Println("error in Marshaling public messages: ", err)
+		// c.JSON(500, gin.H{})
+		return
+	}
+	if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
+		conn.Close()
+		return
 	}
 }
