@@ -2,6 +2,8 @@ package database
 
 import (
 	"context"
+	"first/hosts"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var clientOptions = options.Client().ApplyURI("mongodb://localhost:27017")
+var clientOptions = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s", hosts.MongoHost))
 
 var client, _ = mongo.Connect(context.Background(), clientOptions)
 

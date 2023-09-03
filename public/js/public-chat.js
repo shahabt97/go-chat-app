@@ -98,6 +98,22 @@ async function init() {
       }
     };
   }
+  async function getMessages(messages) {
+
+    const chatBox = document.getElementById("chatBox");
+    
+    for (let i = 0; i < messages.length; i++) {
+      const messageElement = document.createElement("div");
+      messageElement.innerHTML = `<div class="message">
+      <span class="sender">${messages[i].sender.username}:</span>
+      <span class="timestamp">${formatDate(messages[i].createdAt)}</span>
+      <p>${messages[i].message}</p>`;
+
+      chatBox.appendChild(messageElement);
+    }
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
   connection();
 }
 

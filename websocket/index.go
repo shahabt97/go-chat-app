@@ -70,7 +70,7 @@ func HandleConn(c *gin.Context) {
 	go GetPubMessages(conn)
 
 	for {
-		time.Sleep(15 * time.Second)
+		
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
 			delete(Clients, conn)
@@ -83,8 +83,6 @@ func HandleConn(c *gin.Context) {
 			fmt.Println(err2)
 			continue
 		}
-
-// go json.Compact()
 
 
 		go func() {
