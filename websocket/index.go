@@ -38,8 +38,6 @@ func HandleAllConnections() {
 				go func(cl *websocket.Conn) {
 					if err := cl.WriteMessage(msg.MessageType, msg.Message); err != nil {
 						fmt.Println("error in writing in a client: ", err)
-						delete(Clients, cl)
-						OnlineUsersChan <- true
 						cl.Close()
 					}
 				}(client)
@@ -65,7 +63,6 @@ func HandleConn(c *gin.Context) {
 
 	id := c.Query("id")
 	username := c.Query("username")
-	// status := c.Query("status")
 
 	Clients[conn] = username
 	OnlineUsersChan <- true
@@ -73,9 +70,11 @@ func HandleConn(c *gin.Context) {
 	go GetPubMessages(conn)
 
 	for {
+		time.Sleep(15 * time.Second)
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
-			log.Println("err in reading from websocket: ", err)
+			delete(Clients, conn)
+			OnlineUsersChan <- true
 			return
 		}
 		var jsonData = &Event{}
@@ -84,6 +83,9 @@ func HandleConn(c *gin.Context) {
 			fmt.Println(err2)
 			continue
 		}
+
+// go json.Compact()
+
 
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -135,8 +137,6 @@ func HandleOlineUsers() {
 		for client := range Clients {
 			if err := client.WriteMessage(websocket.TextMessage, onlineEventJson); err != nil {
 				fmt.Println("error in sending online users: ", err)
-				delete(Clients, client)
-				OnlineUsersChan <- true
 				client.Close()
 			}
 		}
@@ -144,7 +144,7 @@ func HandleOlineUsers() {
 }
 
 func GetPubMessages(conn *websocket.Conn) {
-	// if status == "public" {
+
 	var Array = []*database.PublicMessage{}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -152,7 +152,6 @@ func GetPubMessages(conn *websocket.Conn) {
 
 	if err != nil {
 		fmt.Println("error in getting all public messages is: ", err)
-		// c.JSON(500, gin.H{})
 		return
 	}
 
@@ -160,7 +159,6 @@ func GetPubMessages(conn *websocket.Conn) {
 		var document = &database.PublicMessage{}
 		if err := results.Decode(document); err != nil {
 			fmt.Println("error in reading all results of public messages: ", err)
-			// c.JSON(500, gin.H{})
 			return
 		}
 		Array = append(Array, document)
@@ -175,7 +173,6 @@ func GetPubMessages(conn *websocket.Conn) {
 
 	if errOfMarshaling != nil {
 		fmt.Println("error in Marshaling public messages: ", err)
-		// c.JSON(500, gin.H{})
 		return
 	}
 	if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {

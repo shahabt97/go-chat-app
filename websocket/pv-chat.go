@@ -37,16 +37,13 @@ func HandlePvConnection(c *gin.Context) {
 
 	go GetPvMessages(username, host, conn)
 
-	conn.SetCloseHandler(func(code int, text string) error {
-		delete(PvClients, conn)
-		OnlineUsersChan <- true
-		return nil
-	})
 	for {
 
 		messageType, message, err := conn.ReadMessage()
 		if err != nil {
 			log.Println("err in reading from websocket: ", err)
+			delete(PvClients, conn)
+			OnlineUsersChan <- true
 			return
 		}
 
@@ -121,7 +118,6 @@ func GetPvMessages(username, host string, conn *websocket.Conn) {
 		{{Key: "sender", Value: host}, {Key: "receiver", Value: username}}}}}, database.FindPvMessagesOption)
 	if err != nil {
 		fmt.Println("error in getting all pv messages is: ", err)
-		// c.JSON(500, gin.H{})
 		return
 	}
 
@@ -129,7 +125,6 @@ func GetPvMessages(username, host string, conn *websocket.Conn) {
 		var document = &database.PvMessage{}
 		if err := results.Decode(document); err != nil {
 			fmt.Println("error in reading all results of public messages: ", err)
-			// c.JSON(500, gin.H{})
 			return
 		}
 		Array = append(Array, document)
@@ -144,14 +139,11 @@ func GetPvMessages(username, host string, conn *websocket.Conn) {
 
 	if errOfMarshaling != nil {
 		fmt.Println("error in Marshaling pv messages: ", err)
-		// c.JSON(500, gin.H{})
 		return
 	}
-	// if len(Array) != 0 {
 	if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
 		conn.Close()
 		return
-		// }
 	}
 
 }
