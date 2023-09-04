@@ -4,6 +4,7 @@ import (
 	"first/controllers"
 	"first/controllers/auth"
 	"first/database"
+	redisServer "first/redis"
 	"first/session"
 	websocketServer "first/websocket"
 	"fmt"
@@ -47,6 +48,9 @@ func main() {
 
 	// static files
 	routes.Static("/public", "public")
+
+	// closing Redis client
+	defer redisServer.Client.Client.Close()
 
 	//port
 	routes.Run(":8080")

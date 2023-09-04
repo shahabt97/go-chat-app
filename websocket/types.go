@@ -63,7 +63,7 @@ type PvConnection struct {
 
 type AllPubMessages struct {
 	EventName string                    `json:"eventName"`
-	Data      []*database.PublicMessage `json:"data"`
+	Data      *[]*database.PublicMessage `json:"data"`
 }
 
 type AllPvMessages struct {

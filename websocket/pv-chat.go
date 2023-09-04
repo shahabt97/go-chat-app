@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"first/database"
 	"first/elasticsearch"
+	redisServer "first/redis"
 	"fmt"
 	"log"
 
@@ -29,6 +30,7 @@ func HandlePvConnection(c *gin.Context) {
 		log.Println(err)
 		return
 	}
+
 	defer conn.Close()
 	username := c.Query("username")
 	host := c.Query("host")
@@ -53,38 +55,50 @@ func HandlePvConnection(c *gin.Context) {
 			fmt.Println("error in unmarshaling data")
 			continue
 		}
+
 		go func() {
+
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
+
 			result, err := database.PvMessages.InsertOne(ctx, bson.D{
 				{Key: "message", Value: messageData.Data.Message},
 				{Key: "sender", Value: messageData.Data.Sender},
 				{Key: "receiver", Value: messageData.Data.Receiver},
 				{Key: "createdAt", Value: messageData.Data.Timestamp},
 			})
+
 			if err != nil {
 				fmt.Println("error in writing pv message in Mongo: ", err)
 				return
 			}
+
 			pvMessageJson := &elasticsearch.PvMessageIndex{
 				Id:       result.InsertedID.(primitive.ObjectID).Hex(),
 				Message:  messageData.Data.Message,
 				Sender:   messageData.Data.Sender,
 				Receiver: messageData.Data.Receiver,
 			}
+
 			pvJsonBytes, errorOfMar := json.Marshal(pvMessageJson)
 			if errorOfMar != nil {
 				fmt.Println("Error in Marshaling user data for elastic: ", errorOfMar)
 				return
 			}
+
 			pvReader := bytes.NewReader(pvJsonBytes)
 			errPvElas := elasticsearch.Client.CreateDoc("pv-messages", pvReader)
 			if errPvElas != nil {
 				fmt.Println("Error in creating user in elastic: ", errPvElas)
 				return
 			}
+
+			go redisServer.Client.SetPvMessages(username, host)
+
 		}()
+
 		PvBroadcast <- &PvMsg{MessageType: messageType, Message: message, Username: username, Host: host}
+
 	}
 
 }
@@ -114,20 +128,53 @@ func GetPvMessages(username, host string, conn *websocket.Conn) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	results, err := database.PvMessages.Find(ctx, bson.D{{Key: "$or", Value: []bson.D{{{Key: "sender", Value: username}, {Key: "receiver", Value: host}},
-		{{Key: "sender", Value: host}, {Key: "receiver", Value: username}}}}}, database.FindPvMessagesOption)
-	if err != nil {
-		fmt.Println("error in getting all pv messages is: ", err)
-		return
-	}
+	val, errOfRedis := redisServer.Client.Client.MGet(ctx, fmt.Sprintf("pvmes:%s,%s", username, host), fmt.Sprintf("pvmes:%s,%s", host, username)).Result()
 
-	for results.Next(ctx) {
-		var document = &database.PvMessage{}
-		if err := results.Decode(document); err != nil {
-			fmt.Println("error in reading all results of public messages: ", err)
+	if errOfRedis != nil || (val[0] == nil && val[1] == nil) {
+		fmt.Println("2222")
+
+		results, err := database.PvMessages.Find(ctx, bson.D{{Key: "$or", Value: []bson.D{{{Key: "sender", Value: username}, {Key: "receiver", Value: host}},
+			{{Key: "sender", Value: host}, {Key: "receiver", Value: username}}}}}, database.FindPvMessagesOption)
+		if err != nil {
+			fmt.Println("error in getting all pv messages is: ", err)
 			return
 		}
-		Array = append(Array, document)
+
+		for results.Next(ctx) {
+			var document = &database.PvMessage{}
+			if err := results.Decode(document); err != nil {
+				fmt.Println("error in reading all results of public messages: ", err)
+				return
+			}
+			Array = append(Array, document)
+		}
+
+		go redisServer.Client.SetPvMessages(username, host)
+
+	} else {
+		fmt.Println("1111")
+
+		if val[0] != nil {
+
+			val1 := val[0].(string)
+			fmt.Println("val: ", val1)
+
+			err := json.Unmarshal([]byte(val1), &Array)
+			if err != nil {
+				fmt.Println("error in unmarshling: ", err)
+				return
+			}
+
+		} else if val[1] != nil {
+
+			val2 := val[1].(string)
+
+			err := json.Unmarshal([]byte(val2), &Array)
+			if err != nil {
+				fmt.Println("error in unmarshling: ", err)
+				return
+			}
+		}
 	}
 
 	allMessages := &AllPvMessages{
@@ -138,7 +185,7 @@ func GetPvMessages(username, host string, conn *websocket.Conn) {
 	jsonData, errOfMarshaling := json.Marshal(allMessages)
 
 	if errOfMarshaling != nil {
-		fmt.Println("error in Marshaling pv messages: ", err)
+		fmt.Println("error in Marshaling pv messages: ", errOfMarshaling)
 		return
 	}
 	if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"first/database"
 	"first/elasticsearch"
+	redisServer "first/redis"
 	"fmt"
 	"log"
 	"time"
@@ -70,7 +71,7 @@ func HandleConn(c *gin.Context) {
 	go GetPubMessages(conn)
 
 	for {
-		
+
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
 			delete(Clients, conn)
@@ -83,7 +84,6 @@ func HandleConn(c *gin.Context) {
 			fmt.Println(err2)
 			continue
 		}
-
 
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -116,6 +116,7 @@ func HandleConn(c *gin.Context) {
 				fmt.Println("Error in creating user in elastic: ", errPubElas)
 				return
 			}
+			go redisServer.Client.SetPubMessages()
 		}()
 		Broadcast <- &Msg{MessageType: messageType, Message: p, Username: username}
 	}
@@ -146,31 +147,44 @@ func GetPubMessages(conn *websocket.Conn) {
 	var Array = []*database.PublicMessage{}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	results, err := database.PubMessages.Find(ctx, bson.M{}, database.FindPubMessagesBasedOnCreatedAtIndexOption)
 
-	if err != nil {
-		fmt.Println("error in getting all public messages is: ", err)
-		return
-	}
+	val, errOfRedis := redisServer.Client.Client.Get(ctx, "pubmessages").Bytes()
 
-	for results.Next(ctx) {
-		var document = &database.PublicMessage{}
-		if err := results.Decode(document); err != nil {
-			fmt.Println("error in reading all results of public messages: ", err)
+	if errOfRedis != nil {
+		go redisServer.Client.SetPubMessages()
+		results, err := database.PubMessages.Find(ctx, bson.M{}, database.FindPubMessagesBasedOnCreatedAtIndexOption)
+
+		if err != nil {
+			fmt.Println("error in getting all public messages is: ", err)
 			return
 		}
-		Array = append(Array, document)
+
+		for results.Next(ctx) {
+			var document = &database.PublicMessage{}
+			if err := results.Decode(document); err != nil {
+				fmt.Println("error in reading all results of public messages: ", err)
+				return
+			}
+			Array = append(Array, document)
+		}
+
+	} else {
+		err := json.Unmarshal(val, &Array)
+		if err != nil {
+			fmt.Println("error in unmarshling: ", err)
+			return
+		}
 	}
 
 	allMessages := &AllPubMessages{
 		EventName: "all messages",
-		Data:      Array,
+		Data:      &Array,
 	}
 
 	jsonData, errOfMarshaling := json.Marshal(allMessages)
 
 	if errOfMarshaling != nil {
-		fmt.Println("error in Marshaling public messages: ", err)
+		fmt.Println("error in Marshaling public messages: ", errOfMarshaling)
 		return
 	}
 	if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
