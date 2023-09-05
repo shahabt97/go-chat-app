@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type ClientOfRedis struct {
@@ -25,62 +24,23 @@ var Client = &ClientOfRedis{
 	Client: client,
 }
 
-func (c *ClientOfRedis) SetPubMessages() {
+func (c *ClientOfRedis) Keys() ([]string, error) {
 
-	var Array = []*database.PublicMessage{}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	results, err := database.PubMessages.Find(ctx, bson.M{}, database.FindPubMessagesBasedOnCreatedAtIndexOption)
-
+	keys, err := c.Client.Keys(context.Background(), "*").Result()
 	if err != nil {
-		fmt.Println("error in getting all public messages is: ", err)
-		return
+		fmt.Println("error in finding key of PV Messages: ", err)
+		return []string{}, err
 	}
-
-	for results.Next(ctx) {
-		var document = &database.PublicMessage{}
-		if err := results.Decode(document); err != nil {
-			fmt.Println("error in reading all results of public messages: ", err)
-			return
-		}
-		Array = append(Array, document)
-	}
-
-	jsonData, errOfMarshaling := json.Marshal(Array)
-	if errOfMarshaling != nil {
-		fmt.Println("error in marshaling pub messages of redis: ", errOfMarshaling)
-		return
-	}
-	if err := c.Client.Set(ctx, "pubmessages", jsonData, 10*time.Hour).Err(); err != nil {
-		fmt.Println("error in setting pub messages: ", err)
-		return
-	}
+	return keys, nil
 
 }
 
-func (c *ClientOfRedis) SetPvMessages(username, host string) {
+func (c *ClientOfRedis) SetPvMes(username, host string, Array *[]*database.PvMessage) {
 
-	var Array = []*database.PvMessage{}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	results, err := database.PvMessages.Find(ctx, bson.D{{Key: "$or", Value: []bson.D{{{Key: "sender", Value: username}, {Key: "receiver", Value: host}},
-		{{Key: "sender", Value: host}, {Key: "receiver", Value: username}}}}}, database.FindPvMessagesOption)
-	if err != nil {
-		fmt.Println("error in getting all pv messages is: ", err)
-		return
-	}
-
-	for results.Next(ctx) {
-		var document = &database.PvMessage{}
-		if err := results.Decode(document); err != nil {
-			fmt.Println("error in reading all results of pv messages: ", err)
-			return
-		}
-		Array = append(Array, document)
-	}
-
-	jsonData, errOfMarshaling := json.Marshal(&Array)
+	jsonData, errOfMarshaling := json.Marshal(Array)
 	if errOfMarshaling != nil {
 		fmt.Println("error in marshaling pub messages of redis: ", errOfMarshaling)
 		return
@@ -126,13 +86,22 @@ func (c *ClientOfRedis) SetPvMessages(username, host string) {
 	}
 }
 
-func (c *ClientOfRedis) Keys() ([]string, error) {
+func (c *ClientOfRedis) SetPubMes(Array *[]*database.PublicMessage) {
 
-	keys, err := c.Client.Keys(context.Background(), "*").Result()
-	if err != nil {
-		fmt.Println("error in finding key of PV Messages: ", err)
-		return []string{}, err
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	jsonData, errOfMarshaling := json.Marshal(Array)
+	if errOfMarshaling != nil {
+		fmt.Println("error in marshaling pub messages of redis: ", errOfMarshaling)
+		return
 	}
-	return keys, nil
+
+	if err := c.Client.Set(ctx, "pubmessages", jsonData, 10*time.Hour).Err(); err != nil {
+		fmt.Println("error in setting pub messages: ", err)
+		return
+	}
+
+	// fmt.Println("yyyyyy", string(jsonData))
 
 }

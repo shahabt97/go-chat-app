@@ -20,10 +20,8 @@ var chat = client.Database("chat")
 var Users = chat.Collection("users")
 var PvMessages = chat.Collection("pv-messages")
 var PubMessages = chat.Collection("public-messages")
-var FindPubMessagesBasedOnCreatedAtIndexOption *options.FindOptions
+var FindPubMessagesOption *options.FindOptions
 var FindPvMessagesOption *options.FindOptions
-var FindPvMessagesOptionWithHint *options.FindOptions
-var FindPvMessagesOptionWithoutHint *options.FindOptions
 
 func UtilsInitializations() {
 
@@ -53,10 +51,8 @@ func UtilsInitializations() {
 		Options: options.Index().SetUnique(true),
 	})
 
-	FindPubMessagesBasedOnCreatedAtIndexOption = options.Find().SetSort(bson.D{{Key: "CreatedAt", Value: 1}})
-	FindPvMessagesOption = options.Find().SetSort(bson.D{{Key: "CreatedAt", Value: 1}})
-	FindPvMessagesOptionWithHint = options.Find().SetHint("senderReceiverIndex")
-	FindPvMessagesOptionWithoutHint = options.Find().SetSort(bson.D{{Key: "CreatedAt", Value: 1}})
+	FindPubMessagesOption = options.Find().SetSort(bson.D{{Key: "CreatedAt", Value: 1}})
+	FindPvMessagesOption = options.Find().SetHint("senderReceiverIndex")
 }
 
 type PublicMessage struct {

@@ -5,6 +5,7 @@ import (
 	"first/database"
 	"first/elasticsearch"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -36,7 +37,7 @@ func SearchInPubChat(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	results, err := database.PubMessages.Find(ctx, bson.M{"_id": bson.M{"$in": IDs}}, database.FindPubMessagesBasedOnCreatedAtIndexOption)
+	results, err := database.PubMessages.Find(ctx, bson.M{"_id": bson.M{"$in": IDs}}, database.FindPubMessagesOption)
 	if err != nil {
 		fmt.Println("error in getting searched public messages is: ", err)
 		c.JSON(500, gin.H{})
@@ -62,6 +63,7 @@ func SearchInPubChat(c *gin.Context) {
 }
 
 func SearchInPvChat(c *gin.Context) {
+
 	query := c.Query("q")
 	user := c.Query("user")
 	host := c.Query("host")
@@ -79,7 +81,7 @@ func SearchInPvChat(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	results, err := database.PvMessages.Find(ctx, bson.M{"_id": bson.M{"$in": IDs}}, database.FindPvMessagesOptionWithoutHint)
+	results, err := database.PvMessages.Find(ctx, bson.M{"_id": bson.M{"$in": IDs}}, database.FindPvMessagesOption)
 	if err != nil {
 		fmt.Println("error in getting searched pv messages is: ", err)
 		c.JSON(500, gin.H{})
@@ -97,6 +99,9 @@ func SearchInPvChat(c *gin.Context) {
 	}
 
 	if len(Array) != 0 {
+		sort.Slice(Array, func(i, j int) bool {
+			return Array[i].CreatedAt.Before(Array[j].CreatedAt)
+		})
 		c.JSON(201, Array)
 		return
 	} else {
@@ -106,6 +111,7 @@ func SearchInPvChat(c *gin.Context) {
 func SearchAllMessages(c *gin.Context) {
 
 	query := c.Query("q")
+
 	res, err := elasticsearch.Client.SearchAllMessages(query, "pv-messages", "pubmessages")
 	if err != nil {
 		fmt.Println(err)
@@ -119,7 +125,7 @@ func SearchAllMessages(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	var PubIDs []primitive.ObjectID
 	var PvIDs []primitive.ObjectID
 
@@ -135,7 +141,7 @@ func SearchAllMessages(c *gin.Context) {
 	}
 
 	if len(PubIDs) != 0 {
-		PubResults, err := database.PubMessages.Find(ctx, bson.M{"_id": bson.M{"$in": PubIDs}}, database.FindPubMessagesBasedOnCreatedAtIndexOption)
+		PubResults, err := database.PubMessages.Find(ctx, bson.M{"_id": bson.M{"$in": PubIDs}}, database.FindPubMessagesOption)
 		if err != nil {
 			fmt.Println("error in getting searched public messages is: ", err)
 			c.JSON(500, gin.H{})
@@ -154,7 +160,7 @@ func SearchAllMessages(c *gin.Context) {
 	}
 
 	if len(PvIDs) != 0 {
-		PvResults, err := database.PvMessages.Find(ctx, bson.M{"_id": bson.M{"$in": PvIDs}}, database.FindPubMessagesBasedOnCreatedAtIndexOption)
+		PvResults, err := database.PvMessages.Find(ctx, bson.M{"_id": bson.M{"$in": PvIDs}}, database.FindPubMessagesOption)
 		if err != nil {
 			fmt.Println("error in getting searched pv messages is: ", err)
 			c.JSON(500, gin.H{})
@@ -180,55 +186,3 @@ func SearchAllMessages(c *gin.Context) {
 	}
 
 }
-// func SearchInMongoForPvMes(c *gin.Context) {
-
-// 	query := c.Query("q")
-// 	user := c.Query("user")
-// 	host := c.Query("host")
-// 	var Array []*database.PvMessage
-
-// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-// 	defer cancel()
-
-// 	patternOfUser := fmt.Sprintf(`^%s$`, user)
-// 	patternOfHost := fmt.Sprintf(`^%s$`, host)
-// 	patternOfMessage := query
-
-// 	// Create a regex query
-// 	regexOfMessage := bson.M{"$regex": primitive.Regex{Pattern: patternOfMessage, Options: "i"}}
-// 	regexOfUser := bson.M{"$regex": primitive.Regex{Pattern: patternOfUser, Options: "i"}}
-// 	regexOfHost := bson.M{"$regex": primitive.Regex{Pattern: patternOfHost, Options: "i"}}
-
-// 	filter1 := bson.M{"message": regexOfMessage, "sender": regexOfUser, "receiver": regexOfHost}
-// 	filter2 := bson.M{"message": regexOfMessage, "sender": regexOfHost, "receiver": regexOfUser}
-
-// 	combinedFilter := bson.M{"$or": []bson.M{filter1, filter2}}
-// 	// Perform the find operation
-// 	cur, err := database.PvMessages.Find(ctx, combinedFilter)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer cur.Close(ctx)
-
-// 	// fmt.Println("cur: ", cur)
-// 	// Iterate through the results
-// 	// var results []*database.PvMessage
-// 	for cur.Next(ctx) {
-
-// 		var document = &database.PvMessage{}
-// 		if err := cur.Decode(document); err != nil {
-// 			fmt.Println("error in reading  results of searched pv messages: ", err)
-// 			c.JSON(500, gin.H{})
-// 			return
-// 		}
-// 		// fmt.Println("doc: ", document)
-// 		Array = append(Array, document)
-// 	}
-// 	// Print the results
-// 	// for _, result := range results {
-// 	fmt.Println(len(Array))
-// 	// }
-
-// 	c.JSON(201, Array)
-
-// }

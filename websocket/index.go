@@ -79,6 +79,7 @@ func HandleConn(c *gin.Context) {
 		}
 
 		go func() {
+
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			objectID, err := primitive.ObjectIDFromHex(id)
@@ -109,14 +110,43 @@ func HandleConn(c *gin.Context) {
 				fmt.Println("Error in creating user in elastic: ", errPubElas)
 				return
 			}
-			go redisServer.Client.SetPubMessages()
+
+			newDoc := &database.PublicMessage{
+				Id:      result.InsertedID.(primitive.ObjectID).Hex(),
+				Message: jsonData.Data.Message,
+				Sender: database.UsersSchema{
+					Id:       objectID,
+					Username: username,
+				},
+				CreatedAt: jsonData.Data.Timestamp,
+			}
+			var Array = []*database.PublicMessage{}
+
+			val, errOfRedis := redisServer.Client.Client.Get(ctx, "pubmessages").Result()
+
+			if errOfRedis != nil {
+				return
+			}
+
+			json.Unmarshal([]byte(val), &Array)
+			if err != nil {
+				fmt.Println("error in unmarshling: ", err)
+				return
+			}
+
+			Array = append(Array, newDoc)
+			go redisServer.Client.SetPubMes(&Array)
+
 		}()
+
 		Broadcast <- &Msg{MessageType: messageType, Message: p, Username: username}
+
 	}
 
 }
 
 func HandleOlineUsers() {
+
 	for {
 		<-OnlineUsersChan
 		Array := []string{}
@@ -133,6 +163,7 @@ func HandleOlineUsers() {
 			}
 		}
 	}
+
 }
 
 func GetPubMessages(conn *websocket.Conn) {
@@ -141,11 +172,10 @@ func GetPubMessages(conn *websocket.Conn) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	val, errOfRedis := redisServer.Client.Client.Get(ctx, "pubmessages").Bytes()
+	val, errOfRedis := redisServer.Client.Client.Get(ctx, "pubmessages").Result()
 
 	if errOfRedis != nil {
-		go redisServer.Client.SetPubMessages()
-		results, err := database.PubMessages.Find(ctx, bson.M{}, database.FindPubMessagesBasedOnCreatedAtIndexOption)
+		results, err := database.PubMessages.Find(ctx, bson.M{}, database.FindPubMessagesOption)
 
 		if err != nil {
 			fmt.Println("error in getting all public messages is: ", err)
@@ -160,9 +190,10 @@ func GetPubMessages(conn *websocket.Conn) {
 			}
 			Array = append(Array, document)
 		}
+		go redisServer.Client.SetPubMes(&Array)
 
 	} else {
-		err := json.Unmarshal(val, &Array)
+		err := json.Unmarshal([]byte(val), &Array)
 		if err != nil {
 			fmt.Println("error in unmarshling: ", err)
 			return

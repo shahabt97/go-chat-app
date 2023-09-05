@@ -9,6 +9,7 @@ import (
 	redisServer "first/redis"
 	"fmt"
 	"log"
+	"sort"
 
 	"time"
 
@@ -93,7 +94,46 @@ func HandlePvConnection(c *gin.Context) {
 				return
 			}
 
-			go redisServer.Client.SetPvMessages(username, host)
+			newDoc := &database.PvMessage{
+				Message:   messageData.Data.Message,
+				Sender:    messageData.Data.Sender,
+				Receiver:  messageData.Data.Receiver,
+				CreatedAt: messageData.Data.Timestamp,
+			}
+
+			var Array = []*database.PvMessage{}
+
+			val, errOfRedis := redisServer.Client.Client.MGet(ctx, fmt.Sprintf("pvmes:%s,%s", username, host), fmt.Sprintf("pvmes:%s,%s", host, username)).Result()
+
+			if errOfRedis != nil || (val[0] == nil && val[1] == nil) {
+				return
+			} else {
+
+				if val[0] != nil {
+
+					val1 := val[0].(string)
+					err := json.Unmarshal([]byte(val1), &Array)
+					if err != nil {
+						fmt.Println("error in unmarshling: ", err)
+						return
+					}
+
+				} else if val[1] != nil {
+
+					val2 := val[1].(string)
+
+					err := json.Unmarshal([]byte(val2), &Array)
+					if err != nil {
+						fmt.Println("error in unmarshling: ", err)
+						return
+					}
+				}
+
+			}
+
+			Array = append(Array, newDoc)
+
+			go redisServer.Client.SetPvMes(username, host, &Array)
 
 		}()
 
@@ -133,7 +173,7 @@ func GetPvMessages(username, host string, conn *websocket.Conn) {
 	if errOfRedis != nil || (val[0] == nil && val[1] == nil) {
 
 		results, err := database.PvMessages.Find(ctx, bson.D{{Key: "$or", Value: []bson.D{{{Key: "sender", Value: username}, {Key: "receiver", Value: host}},
-			{{Key: "sender", Value: host}, {Key: "receiver", Value: username}}}}}, database.FindPvMessagesOptionWithHint, database.FindPvMessagesOption)
+			{{Key: "sender", Value: host}, {Key: "receiver", Value: username}}}}}, database.FindPvMessagesOption)
 		if err != nil {
 			fmt.Println("error in getting all pv messages is: ", err)
 			return
@@ -148,7 +188,11 @@ func GetPvMessages(username, host string, conn *websocket.Conn) {
 			Array = append(Array, document)
 		}
 
-		go redisServer.Client.SetPvMessages(username, host)
+		sort.Slice(Array, func(i, j int) bool {
+			return Array[i].CreatedAt.Before(Array[j].CreatedAt)
+		})
+
+		go redisServer.Client.SetPvMes(username, host, &Array)
 
 	} else {
 
