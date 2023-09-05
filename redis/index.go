@@ -79,7 +79,6 @@ func (c *ClientOfRedis) SetPvMessages(username, host string) {
 		}
 		Array = append(Array, document)
 	}
-	fmt.Println("3333")
 
 	jsonData, errOfMarshaling := json.Marshal(&Array)
 	if errOfMarshaling != nil {
@@ -92,9 +91,10 @@ func (c *ClientOfRedis) SetPvMessages(username, host string) {
 	if errOfKeys != nil {
 		return
 	}
-	fmt.Println("12: ", string(jsonData))
+
 	key1 := fmt.Sprintf("pvmes:%s,%s", username, host)
 	key2 := fmt.Sprintf("pvmes:%s,%s", host, username)
+	exist := false
 
 	for _, value := range keys {
 
@@ -104,26 +104,26 @@ func (c *ClientOfRedis) SetPvMessages(username, host string) {
 			if err := c.Client.Set(ctx, fmt.Sprintf("pvmes:%s,%s", username, host), jsonData, 10*time.Hour).Err(); err != nil {
 				fmt.Println("error in setting pub messages: ", err)
 			}
-			fmt.Println("5555")
-
+			exist = true
 			return
 
 		case key2:
 			if err := c.Client.Set(ctx, fmt.Sprintf("pvmes:%s,%s", host, username), jsonData, 10*time.Hour).Err(); err != nil {
 				fmt.Println("error in setting pub messages: ", err)
 			}
-			fmt.Println("66666")
-
+			exist = true
 			return
 
 		default:
-			fmt.Println("7777")
-
 			continue
 		}
 	}
-	fmt.Println("4444")
-
+	if !exist {
+		if err := c.Client.Set(ctx, fmt.Sprintf("pvmes:%s,%s", username, host), jsonData, 10*time.Hour).Err(); err != nil {
+			fmt.Println("error in setting pub messages: ", err)
+		}
+		return
+	}
 }
 
 func (c *ClientOfRedis) Keys() ([]string, error) {
@@ -133,7 +133,6 @@ func (c *ClientOfRedis) Keys() ([]string, error) {
 		fmt.Println("error in finding key of PV Messages: ", err)
 		return []string{}, err
 	}
-	fmt.Println("keys: ", keys)
 	return keys, nil
 
 }

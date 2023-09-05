@@ -22,6 +22,7 @@ var PvMessages = chat.Collection("pv-messages")
 var PubMessages = chat.Collection("public-messages")
 var FindPubMessagesBasedOnCreatedAtIndexOption *options.FindOptions
 var FindPvMessagesOption *options.FindOptions
+var FindPvMessagesOptionWithHint *options.FindOptions
 var FindPvMessagesOptionWithoutHint *options.FindOptions
 
 func UtilsInitializations() {
@@ -53,7 +54,8 @@ func UtilsInitializations() {
 	})
 
 	FindPubMessagesBasedOnCreatedAtIndexOption = options.Find().SetSort(bson.D{{Key: "CreatedAt", Value: 1}})
-	FindPvMessagesOption = options.Find().SetHint("senderReceiverIndex").SetSort(bson.D{{Key: "CreatedAt", Value: 1}})
+	FindPvMessagesOption = options.Find().SetSort(bson.D{{Key: "CreatedAt", Value: 1}})
+	FindPvMessagesOptionWithHint = options.Find().SetHint("senderReceiverIndex")
 	FindPvMessagesOptionWithoutHint = options.Find().SetSort(bson.D{{Key: "CreatedAt", Value: 1}})
 }
 

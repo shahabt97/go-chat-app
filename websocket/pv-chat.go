@@ -131,10 +131,9 @@ func GetPvMessages(username, host string, conn *websocket.Conn) {
 	val, errOfRedis := redisServer.Client.Client.MGet(ctx, fmt.Sprintf("pvmes:%s,%s", username, host), fmt.Sprintf("pvmes:%s,%s", host, username)).Result()
 
 	if errOfRedis != nil || (val[0] == nil && val[1] == nil) {
-		fmt.Println("2222")
 
 		results, err := database.PvMessages.Find(ctx, bson.D{{Key: "$or", Value: []bson.D{{{Key: "sender", Value: username}, {Key: "receiver", Value: host}},
-			{{Key: "sender", Value: host}, {Key: "receiver", Value: username}}}}}, database.FindPvMessagesOption)
+			{{Key: "sender", Value: host}, {Key: "receiver", Value: username}}}}}, database.FindPvMessagesOptionWithHint, database.FindPvMessagesOption)
 		if err != nil {
 			fmt.Println("error in getting all pv messages is: ", err)
 			return
@@ -152,13 +151,10 @@ func GetPvMessages(username, host string, conn *websocket.Conn) {
 		go redisServer.Client.SetPvMessages(username, host)
 
 	} else {
-		fmt.Println("1111")
 
 		if val[0] != nil {
 
 			val1 := val[0].(string)
-			fmt.Println("val: ", val1)
-
 			err := json.Unmarshal([]byte(val1), &Array)
 			if err != nil {
 				fmt.Println("error in unmarshling: ", err)

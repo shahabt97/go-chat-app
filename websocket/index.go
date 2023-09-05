@@ -54,13 +54,6 @@ func HandleConn(c *gin.Context) {
 		return
 	}
 	defer conn.Close()
-	conn.SetCloseHandler(func(code int, text string) error {
-
-		delete(Clients, conn)
-		OnlineUsersChan <- true
-		return nil
-
-	})
 
 	id := c.Query("id")
 	username := c.Query("username")
