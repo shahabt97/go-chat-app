@@ -1,18 +1,10 @@
 async function init() {
-
-  // find user ID
-  const data = await axios.get(`http://${hostAndPort}/user/get-user-id`);
-  console.log(data);
-
   // Connect to Socket.IO server
-  let id = data.data.id;
-  let username = data.data.username;
+
   let socket;
 
   function connection() {
-    socket = new WebSocket(
-      `ws://${hostAndPort}/ws?username=${username}&id=${id}`
-    );
+    socket = new WebSocket(`ws://${hostAndPort}/ws`);
 
     const inputBoxForm = document.getElementById("inputBoxForm");
     const submitButton = document.getElementById("submitButton");
@@ -27,7 +19,6 @@ async function init() {
       sendMessage();
     });
 
-
     // Function to send a new message
     function sendMessage() {
       const messageInput = document.getElementById("messageInput");
@@ -35,11 +26,9 @@ async function init() {
       const timestamp = new Date(); // Get the current timestamp
 
       if (message !== "") {
-
         // Create an object with the message, username, and timestamp
         const messageData = {
           message,
-          username,
           timestamp,
         };
 
@@ -74,38 +63,36 @@ async function init() {
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-  // Listen for 'newMessage' event from the server
-  socket.onmessage = async (event) => {
-    const data = JSON.parse(event.data.toString());
-    console.log("data: ", data);
-    if (data.eventName == "chat message") {
-      receiveMessage(data.data);
-    }
-    if (data.eventName == "all messages") {
-      await getMessages(data.data);
-    }
-    if (data.eventName == "online users") {
-      onlineUsers.innerHTML = "";
-      for (const usernamee of data.data.OnlineUsers) {
-        if (username !== usernamee) {
-          console.log("usernamee: ", usernamee);
-          console.log("username: ", username);
-          onlineUsers.innerHTML += `
+    // Listen for 'newMessage' event from the server
+    socket.onmessage = async (event) => {
+      const data = JSON.parse(event.data.toString());
+      console.log("data: ", data);
+      if (data.eventName == "chat message") {
+        receiveMessage(data.data);
+      }
+      if (data.eventName == "all messages") {
+        await getMessages(data.data);
+      }
+      if (data.eventName == "online users") {
+        onlineUsers.innerHTML = "";
+        for (const usernamee of data.data.OnlineUsers) {
+          // if (username !== usernamee) {
+            onlineUsers.innerHTML += `
           <li><span></span><a href="/chat/pv/${usernamee}" target="_blank">${usernamee}</a></li>
         `;
-          }
+          // }
         }
       }
     };
   }
   async function getMessages(messages) {
-
+    console.log("messages: ", messages);
     const chatBox = document.getElementById("chatBox");
-    
+
     for (let i = 0; i < messages.length; i++) {
       const messageElement = document.createElement("div");
       messageElement.innerHTML = `<div class="message">
-      <span class="sender">${messages[i].sender.username}:</span>
+      <span class="sender">${messages[i].sender}:</span>
       <span class="timestamp">${formatDate(messages[i].createdAt)}</span>
       <p>${messages[i].message}</p>`;
 
@@ -118,7 +105,6 @@ async function init() {
 }
 
 function formatDate(dateTimeStr) {
-
   // Format in ISO format
   const date = new Date(dateTimeStr);
   const options = { hour: "numeric", minute: "numeric", weekday: "long" };

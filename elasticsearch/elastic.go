@@ -23,8 +23,10 @@ var Client = &ElasticClient{
 }
 
 func (client *ElasticClient) CreateDoc(Index string, body io.Reader) error {
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	_, err := client.Client.Index(Index, body, client.Client.Index.WithContext(ctx))
 	if err != nil {
 		return err
@@ -96,7 +98,6 @@ func (client *ElasticClient) SearchPubMessages(q string, indexes ...string) ([]p
 		fmt.Println("Error in searching pubMessages : ", err)
 		return nil, err
 	}
-	// fmt.Println("result: ", result)
 
 	res := make(map[string]interface{})
 

@@ -63,6 +63,7 @@ func (c *ClientOfRedis) SetPvMes(username, host string, Array *[]*database.PvMes
 		case key1:
 			if err := c.Client.Set(ctx, fmt.Sprintf("pvmes:%s,%s", username, host), jsonData, 10*time.Hour).Err(); err != nil {
 				fmt.Println("error in setting pub messages: ", err)
+				go c.SetPvMes(username, host, Array)
 			}
 			exist = true
 			return
@@ -70,6 +71,7 @@ func (c *ClientOfRedis) SetPvMes(username, host string, Array *[]*database.PvMes
 		case key2:
 			if err := c.Client.Set(ctx, fmt.Sprintf("pvmes:%s,%s", host, username), jsonData, 10*time.Hour).Err(); err != nil {
 				fmt.Println("error in setting pub messages: ", err)
+				go c.SetPvMes(username, host, Array)
 			}
 			exist = true
 			return
@@ -81,6 +83,7 @@ func (c *ClientOfRedis) SetPvMes(username, host string, Array *[]*database.PvMes
 	if !exist {
 		if err := c.Client.Set(ctx, fmt.Sprintf("pvmes:%s,%s", username, host), jsonData, 10*time.Hour).Err(); err != nil {
 			fmt.Println("error in setting pub messages: ", err)
+			go c.SetPvMes(username, host, Array)
 		}
 		return
 	}
@@ -94,14 +97,13 @@ func (c *ClientOfRedis) SetPubMes(Array *[]*database.PublicMessage) {
 	jsonData, errOfMarshaling := json.Marshal(Array)
 	if errOfMarshaling != nil {
 		fmt.Println("error in marshaling pub messages of redis: ", errOfMarshaling)
+		go c.SetPubMes(Array)
 		return
 	}
 
 	if err := c.Client.Set(ctx, "pubmessages", jsonData, 10*time.Hour).Err(); err != nil {
 		fmt.Println("error in setting pub messages: ", err)
+		go c.SetPubMes(Array)
 		return
 	}
-
-	// fmt.Println("yyyyyy", string(jsonData))
-
 }

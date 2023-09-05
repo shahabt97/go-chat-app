@@ -1,20 +1,18 @@
 package websocketServer
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"first/database"
-	"first/elasticsearch"
 	redisServer "first/redis"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/sessions"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var Clients = make(map[*websocket.Conn]string)
@@ -48,6 +46,19 @@ func HandleAllConnections() {
 }
 
 func HandleConn(c *gin.Context) {
+
+	sessionRaw, _ := c.Get("session")
+	session, _ := sessionRaw.(*sessions.Session)
+	if session.Values["username"] == nil {
+		c.JSON(403, gin.H{
+			"message": "User unAuthorized",
+		})
+		c.Abort()
+		return
+	}
+
+	username := session.Values["username"].(string)
+
 	conn, err := Upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Println(err)
@@ -55,8 +66,6 @@ func HandleConn(c *gin.Context) {
 	}
 	defer conn.Close()
 
-	id := c.Query("id")
-	username := c.Query("username")
 
 	Clients[conn] = username
 	OnlineUsersChan <- true
@@ -71,6 +80,7 @@ func HandleConn(c *gin.Context) {
 			OnlineUsersChan <- true
 			return
 		}
+
 		var jsonData = &Event{}
 		err2 := json.Unmarshal(p, jsonData)
 		if err2 != nil {
@@ -78,66 +88,8 @@ func HandleConn(c *gin.Context) {
 			continue
 		}
 
-		go func() {
-
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			objectID, err := primitive.ObjectIDFromHex(id)
-			if err != nil {
-				fmt.Println("error in making string of id to ObjectId of mongo: ", err)
-			}
-
-			result, _ := database.PubMessages.InsertOne(ctx, bson.D{
-				{Key: "message", Value: jsonData.Data.Message},
-				{Key: "sender", Value: bson.D{
-					{Key: "id", Value: objectID},
-					{Key: "username", Value: username},
-				}},
-				{Key: "createdAt", Value: jsonData.Data.Timestamp},
-			})
-			pubMessageJson := &elasticsearch.PubMessageIndex{
-				Id:      result.InsertedID.(primitive.ObjectID).Hex(),
-				Message: jsonData.Data.Message,
-			}
-			pubJsonBytes, errorOfMar := json.Marshal(pubMessageJson)
-			if errorOfMar != nil {
-				fmt.Println("Error in Marshaling user data for elastic: ", err)
-				return
-			}
-			pubReader := bytes.NewReader(pubJsonBytes)
-			errPubElas := elasticsearch.Client.CreateDoc("pubmessages", pubReader)
-			if errPubElas != nil {
-				fmt.Println("Error in creating user in elastic: ", errPubElas)
-				return
-			}
-
-			newDoc := &database.PublicMessage{
-				Id:      result.InsertedID.(primitive.ObjectID).Hex(),
-				Message: jsonData.Data.Message,
-				Sender: database.UsersSchema{
-					Id:       objectID,
-					Username: username,
-				},
-				CreatedAt: jsonData.Data.Timestamp,
-			}
-			var Array = []*database.PublicMessage{}
-
-			val, errOfRedis := redisServer.Client.Client.Get(ctx, "pubmessages").Result()
-
-			if errOfRedis != nil {
-				return
-			}
-
-			json.Unmarshal([]byte(val), &Array)
-			if err != nil {
-				fmt.Println("error in unmarshling: ", err)
-				return
-			}
-
-			Array = append(Array, newDoc)
-			go redisServer.Client.SetPubMes(&Array)
-
-		}()
+		// add new message to Mongo ,Elastic and Redis
+		go HandleNewPubMes(jsonData, username)
 
 		Broadcast <- &Msg{MessageType: messageType, Message: p, Username: username}
 

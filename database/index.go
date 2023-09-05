@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -58,13 +57,10 @@ func UtilsInitializations() {
 type PublicMessage struct {
 	Id        string      `bson:"_id" json:"id"`
 	Message   string      `bson:"message" json:"message"`
-	Sender    UsersSchema `bson:"sender" json:"sender"`
+	Sender    string `bson:"sender" json:"sender"`
 	CreatedAt time.Time   `bson:"createdAt" json:"createdAt"`
 }
-type UsersSchema struct {
-	Id       primitive.ObjectID `bson:"id" json:"id"`
-	Username string             `bson:"username" json:"username"`
-}
+
 type PvMessage struct {
 	Message   string    `bson:"message" json:"message"`
 	Sender    string    `bson:"sender" json:"sender"`

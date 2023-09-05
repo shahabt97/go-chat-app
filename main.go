@@ -17,12 +17,12 @@ func main() {
 	routes := gin.Default()
 	database.UtilsInitializations()
 
-	// handling websocket
-	websocketServer.Websocket(routes)
-
 	// session
 	routes.Use(sessiosnMiddleware)
 
+	// handling websocket
+	websocketServer.Websocket(routes)
+	
 	//homepage
 	routes.GET("/", controllers.HomePageHandler)
 

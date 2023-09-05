@@ -1,21 +1,10 @@
 async function init() {
   const path = window.location.pathname;
   const hostUser = path.split("/")[3];
-  const data = await axios.get(`http://${hostAndPort}/user/get-user-id`);
-
-  // const messages = await axios.get(
-  //   `http://${hostAndPort}/chat/get-messages?hostUser=${hostUser}&username=${data.data.username}&status=pv`
-  // );
-  // console.log(messages);
-  // await getMessages(messages.data);
 
   // Connect to Socket.IO server
-  let id = data.data.id;
-  let username = data.data.username;
   function connection() {
-    const socket = new WebSocket(
-      `ws://${hostAndPort}/ws/pv?username=${username}&host=${hostUser}`
-    );
+    const socket = new WebSocket(`ws://${hostAndPort}/ws/pv?host=${hostUser}`);
 
     const inputBoxForm = document.getElementById("inputBoxForm");
     const submitButton = document.getElementById("submitButton");
@@ -40,7 +29,6 @@ async function init() {
         // Create an object with the message, username, and timestamp
         const messageData = {
           message,
-          sender: username,
           receiver: hostUser,
           timestamp,
         };
@@ -88,7 +76,6 @@ async function init() {
   }
 
   async function getMessages(messages) {
-    
     const chatBox = document.getElementById("chatBox");
 
     for (let i = 0; i < messages.length; i++) {

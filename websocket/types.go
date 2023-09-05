@@ -25,14 +25,13 @@ type PvMsg struct {
 }
 type PvMessageContent struct {
 	Message   string    `json:"message"`
-	Sender    string    `json:"sender"`
 	Receiver  string    `json:"receiver"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
 type MessageContent struct {
 	Message  string `json:"message"`
-	Username string `json:"username"`
+	// Username string `json:"username"`
 	// UserId    int       `json:"userId"`
 	Timestamp time.Time `json:"timestamp"`
 }
