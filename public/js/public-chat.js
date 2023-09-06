@@ -47,11 +47,7 @@ async function init() {
         messageInput.value = ""; // Clear the input field
       }
     }
-    socket.onclose = (event) => {
-      console.log("socket is disconnected");
-      socket.close();
-      connection();
-    };
+
     // Function to handle incoming messages
     function receiveMessage(messageData) {
       const chatBox = document.getElementById("chatBox");
@@ -88,7 +84,15 @@ async function init() {
         }
       }
     };
+
+
+    socket.onclose = (event) => {
+      socket.close();
+      connection();
+    };
+
   }
+
   async function getMessages(messages) {
     console.log("messages: ", messages);
     const chatBox = document.getElementById("chatBox");

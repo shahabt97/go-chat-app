@@ -2,6 +2,7 @@ async function init() {
   const path = window.location.pathname;
   const hostUser = path.split("/")[3];
 
+
   // Connect to Socket.IO server
   function connection() {
     const socket = new WebSocket(`ws://${hostAndPort}/ws/pv?host=${hostUser}`);
@@ -13,7 +14,7 @@ async function init() {
       e.preventDefault();
       sendMessage();
     });
-    
+
     submitButton.addEventListener("click", (e) => {
       e.preventDefault();
       sendMessage();
@@ -71,6 +72,11 @@ async function init() {
       if (data.eventName == "all messages") {
         await getMessages(data.data);
       }
+    };
+
+    socket.onclose = (event) => {
+      socket.close();
+      connection();
     };
   }
 

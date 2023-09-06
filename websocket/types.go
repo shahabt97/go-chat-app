@@ -15,7 +15,6 @@ var Upgrader = websocket.Upgrader{
 type Msg struct {
 	MessageType int
 	Message     []byte
-	Username    string
 }
 type PvMsg struct {
 	MessageType int
@@ -25,14 +24,14 @@ type PvMsg struct {
 }
 type PvMessageContent struct {
 	Message   string    `json:"message"`
+	Sender    string    `json:"sender"`
 	Receiver  string    `json:"receiver"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
 type MessageContent struct {
-	Message  string `json:"message"`
-	// Username string `json:"username"`
-	// UserId    int       `json:"userId"`
+	Message   string    `json:"message"`
+	Username  string    `json:"username"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
@@ -59,11 +58,11 @@ type PvConnection struct {
 }
 
 type AllPubMessages struct {
-	EventName string                    `json:"eventName"`
+	EventName string                     `json:"eventName"`
 	Data      *[]*database.PublicMessage `json:"data"`
 }
 
 type AllPvMessages struct {
-	EventName string                    `json:"eventName"`
+	EventName string                `json:"eventName"`
 	Data      []*database.PvMessage `json:"data"`
 }

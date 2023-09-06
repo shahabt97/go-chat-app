@@ -15,21 +15,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func HandleNewPubMes(jsonData *Event, username string) {
+func HandleNewPubMes(jsonData *Event) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	result, errOfMongo := database.PubMessages.InsertOne(ctx, bson.D{
 		{Key: "message", Value: jsonData.Data.Message},
-		{Key: "sender", Value: username},
+		{Key: "sender", Value: jsonData.Data.Username},
 		{Key: "createdAt", Value: jsonData.Data.Timestamp},
 	})
 
 	if errOfMongo != nil {
 		fmt.Println("error storing new public message in Mongo: ", errOfMongo)
 		time.Sleep(10 * time.Second)
-		go HandleNewPubMes(jsonData, username)
+		go HandleNewPubMes(jsonData)
 		return
 	}
 
@@ -37,7 +37,7 @@ func HandleNewPubMes(jsonData *Event, username string) {
 	go SavePubMesInES(result, jsonData)
 
 	// Save new public message in Redis
-	go SavePubMesInRedis(result, jsonData, username)
+	go SavePubMesInRedis(result, jsonData)
 
 }
 
@@ -67,14 +67,14 @@ func SavePubMesInES(result *mongo.InsertOneResult, jsonData *Event) {
 
 }
 
-func SavePubMesInRedis(result *mongo.InsertOneResult, jsonData *Event, username string) {
+func SavePubMesInRedis(result *mongo.InsertOneResult, jsonData *Event) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	newDoc := &database.PublicMessage{
 		Message:   jsonData.Data.Message,
-		Sender:    username,
+		Sender:    jsonData.Data.Username,
 		CreatedAt: jsonData.Data.Timestamp,
 	}
 
@@ -83,7 +83,7 @@ func SavePubMesInRedis(result *mongo.InsertOneResult, jsonData *Event, username 
 	val, errOfRedis := redisServer.Client.Client.Get(ctx, "pubmessages").Result()
 
 	if errOfRedis != nil {
-		go SavePubMesInRedis(result, jsonData, username)
+		go SavePubMesInRedis(result, jsonData)
 		return
 	}
 
@@ -99,14 +99,14 @@ func SavePubMesInRedis(result *mongo.InsertOneResult, jsonData *Event, username 
 
 }
 
-func HandleNewPvMes(messageData *PvEvent, username, host string) {
+func HandleNewPvMes(messageData *PvEvent, host string) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	result, err := database.PvMessages.InsertOne(ctx, bson.D{
 		{Key: "message", Value: messageData.Data.Message},
-		{Key: "sender", Value: username},
+		{Key: "sender", Value: messageData.Data.Sender},
 		{Key: "receiver", Value: messageData.Data.Receiver},
 		{Key: "createdAt", Value: messageData.Data.Timestamp},
 	})
@@ -116,24 +116,24 @@ func HandleNewPvMes(messageData *PvEvent, username, host string) {
 
 		// after 10 seconds again try to insert data in Mongo
 		time.Sleep(10 * time.Second)
-		go HandleNewPvMes(messageData, username, host)
+		go HandleNewPvMes(messageData, host)
 		return
 	}
 
 	// save pv message in elastic
-	go SavePvMesInES(result, messageData,username)
+	go SavePvMesInES(result, messageData)
 
 	// save pv message in Redis
-	go SavePvMesInRedis(messageData, username, host)
+	go SavePvMesInRedis(messageData, host)
 
 }
 
-func SavePvMesInES(result *mongo.InsertOneResult, messageData *PvEvent, username string) {
+func SavePvMesInES(result *mongo.InsertOneResult, messageData *PvEvent) {
 
 	pvMessageJson := &elasticsearch.PvMessageIndex{
 		Id:       result.InsertedID.(primitive.ObjectID).Hex(),
 		Message:  messageData.Data.Message,
-		Sender:   username,
+		Sender:   messageData.Data.Sender,
 		Receiver: messageData.Data.Receiver,
 	}
 
@@ -143,7 +143,7 @@ func SavePvMesInES(result *mongo.InsertOneResult, messageData *PvEvent, username
 
 		// after 10 seconds again try to insert data in Elastic
 		time.Sleep(10 * time.Second)
-		go SavePvMesInES(result, messageData, username)
+		go SavePvMesInES(result, messageData)
 		return
 	}
 
@@ -152,25 +152,27 @@ func SavePvMesInES(result *mongo.InsertOneResult, messageData *PvEvent, username
 	if errPvElas != nil {
 		fmt.Println("Error in creating user in elastic: ", errPvElas)
 		time.Sleep(10 * time.Second)
-		go SavePvMesInES(result, messageData, username)
+		go SavePvMesInES(result, messageData)
 		return
 	}
 
 }
 
-func SavePvMesInRedis(messageData *PvEvent, username, host string) {
+func SavePvMesInRedis(messageData *PvEvent, host string) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	newDoc := &database.PvMessage{
 		Message:   messageData.Data.Message,
-		Sender:    username,
+		Sender:    messageData.Data.Sender,
 		Receiver:  messageData.Data.Receiver,
 		CreatedAt: messageData.Data.Timestamp,
 	}
 
 	var Array = []*database.PvMessage{}
+
+	username := messageData.Data.Sender
 
 	val, errOfRedis := redisServer.Client.Client.MGet(ctx, fmt.Sprintf("pvmes:%s,%s", username, host), fmt.Sprintf("pvmes:%s,%s", host, username)).Result()
 

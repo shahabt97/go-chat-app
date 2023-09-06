@@ -67,9 +67,17 @@ func HandlePvConnection(c *gin.Context) {
 			continue
 		}
 
-		go HandleNewPvMes(messageData, username, host)
+		messageData.Data.Sender = username
 
-		PvBroadcast <- &PvMsg{MessageType: messageType, Message: message, Username: username, Host: host}
+		newP, err2 := json.Marshal(messageData)
+		if err2 != nil {
+			fmt.Println(err2)
+			continue
+		}
+
+		go HandleNewPvMes(messageData, host)
+
+		PvBroadcast <- &PvMsg{MessageType: messageType, Message: newP, Username: username, Host: host}
 
 	}
 

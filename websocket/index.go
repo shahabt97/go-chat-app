@@ -33,6 +33,7 @@ func Websocket(routes *gin.Engine) {
 func HandleAllConnections() {
 	for {
 		msg := <-Broadcast
+
 		go func() {
 			for client := range Clients {
 				go func(cl *websocket.Conn) {
@@ -89,10 +90,18 @@ func HandleConn(c *gin.Context) {
 			continue
 		}
 
-		// add new message to Mongo ,Elastic and Redis
-		go HandleNewPubMes(jsonData, username)
+		jsonData.Data.Username = username
 
-		Broadcast <- &Msg{MessageType: messageType, Message: p, Username: username}
+		newP, err3 := json.Marshal(jsonData)
+		if err3 != nil {
+			fmt.Println(err3)
+			continue
+		}
+
+		// add new message to Mongo ,Elastic and Redis
+		go HandleNewPubMes(jsonData)
+
+		Broadcast <- &Msg{MessageType: messageType, Message: newP}
 
 	}
 
