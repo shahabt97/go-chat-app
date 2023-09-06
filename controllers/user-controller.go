@@ -134,13 +134,24 @@ func LoginHandler(c *gin.Context) {
 
 	session, _ := session.Store.Get(c.Request, "log-session")
 	session.Options.MaxAge = int(12 * 24 * time.Hour / time.Second)
+	session.Options.HttpOnly = true
 	session.Values["username"] = userData.Username
 	session.Values["id"] = userData.ID
+
 	err_saving_session := session.Save(c.Request, c.Writer)
 	if err_saving_session != nil {
 		fmt.Println("err: ", err_saving_session)
 		return
 	}
+
+	cookie := &http.Cookie{
+		Name:  "username",
+		Value: userData.Username,
+		Path:  "/",
+		// HttpOnly: true,
+		Expires: time.Now().Add(12 * 24 * time.Hour),
+	}
+	http.SetCookie(c.Writer, cookie)
 
 	c.Redirect(301, "/chat/public")
 
@@ -169,10 +180,21 @@ func GetUserInfoFromSession(c *gin.Context) {
 }
 
 func LogoutHandler(c *gin.Context) {
+
 	sessionRaw, _ := c.Get("session")
 	session, _ := sessionRaw.(*sessions.Session)
+
+	cookie := &http.Cookie{
+		Name:    "username",
+		Value:   "",
+		Path:    "/",
+		Expires: time.Unix(0, 0),
+	}
+	http.SetCookie(c.Writer, cookie)
+
 	session.Options.MaxAge = -1
 	session.Save(c.Request, c.Writer)
+
 	c.Redirect(302, "/")
 }
 

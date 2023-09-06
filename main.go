@@ -7,7 +7,7 @@ import (
 	redisServer "first/redis"
 	"first/session"
 	websocketServer "first/websocket"
-	"fmt"
+	// "fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -57,12 +57,10 @@ func main() {
 
 }
 func sessiosnMiddleware(c *gin.Context) {
+
 	session, _ := session.Store.Get(c.Request, "log-session")
-	err := session.Save(c.Request, c.Writer)
-	if err != nil {
-		fmt.Println("err: ", err)
-		return
-	}
+	
 	c.Set("session", session)
 	c.Next()
+
 }

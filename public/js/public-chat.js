@@ -1,6 +1,11 @@
 async function init() {
   // Connect to Socket.IO server
 
+  const username = Cookies.get("username");
+  console.log("Value of my-cookie:", username);
+  const myCookieValue2 = Cookies.get("log-session");
+  console.log("Value of my-cookie2:", myCookieValue2);
+
   let socket;
 
   function connection() {
@@ -35,7 +40,6 @@ async function init() {
         // Emit the 'newMessage' event to the server with the message data
         socket.send(
           JSON.stringify({
-            id,
             eventName: "chat message",
             data: messageData,
           })
@@ -75,12 +79,12 @@ async function init() {
       }
       if (data.eventName == "online users") {
         onlineUsers.innerHTML = "";
-        for (const usernamee of data.data.OnlineUsers) {
-          // if (username !== usernamee) {
+        for (const user of data.data.OnlineUsers) {
+          if (username !== user) {
             onlineUsers.innerHTML += `
-          <li><span></span><a href="/chat/pv/${usernamee}" target="_blank">${usernamee}</a></li>
+          <li><span></span><a href="/chat/pv/${user}" target="_blank">${user}</a></li>
         `;
-          // }
+          }
         }
       }
     };

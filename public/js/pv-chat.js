@@ -8,12 +8,12 @@ async function init() {
 
     const inputBoxForm = document.getElementById("inputBoxForm");
     const submitButton = document.getElementById("submitButton");
-    const onlineUsers = document.getElementById("onlineUsers");
 
     inputBoxForm.addEventListener("submit", (e) => {
       e.preventDefault();
       sendMessage();
     });
+    
     submitButton.addEventListener("click", (e) => {
       e.preventDefault();
       sendMessage();
@@ -36,7 +36,6 @@ async function init() {
         // Emit the 'newMessage' event to the server with the message data
         socket.send(
           JSON.stringify({
-            id,
             eventName: "chat message",
             data: messageData,
           })

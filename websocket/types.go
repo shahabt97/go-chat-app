@@ -37,13 +37,11 @@ type MessageContent struct {
 }
 
 type Event struct {
-	Id        string         `json:"id"`
 	EventName string         `json:"eventName"`
 	Data      MessageContent `json:"data"`
 }
 
 type PvEvent struct {
-	Id        string           `json:"id"`
 	EventName string           `json:"eventName"`
 	Data      PvMessageContent `json:"data"`
 }
