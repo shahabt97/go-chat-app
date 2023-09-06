@@ -71,6 +71,8 @@ func (c *ClientOfRedis) SetPvMes(username, host string, Array *[]*database.PvMes
 		case key2:
 			if err := c.Client.Set(ctx, fmt.Sprintf("pvmes:%s,%s", host, username), jsonData, 10*time.Hour).Err(); err != nil {
 				fmt.Println("error in setting pub messages: ", err)
+
+				// try again to set data in Redis
 				go c.SetPvMes(username, host, Array)
 			}
 			exist = true
@@ -83,6 +85,8 @@ func (c *ClientOfRedis) SetPvMes(username, host string, Array *[]*database.PvMes
 	if !exist {
 		if err := c.Client.Set(ctx, fmt.Sprintf("pvmes:%s,%s", username, host), jsonData, 10*time.Hour).Err(); err != nil {
 			fmt.Println("error in setting pub messages: ", err)
+
+			// try again to set data in Redis
 			go c.SetPvMes(username, host, Array)
 		}
 		return
@@ -103,6 +107,8 @@ func (c *ClientOfRedis) SetPubMes(Array *[]*database.PublicMessage) {
 
 	if err := c.Client.Set(ctx, "pubmessages", jsonData, 10*time.Hour).Err(); err != nil {
 		fmt.Println("error in setting pub messages: ", err)
+
+		// try again to set data in Redis
 		go c.SetPubMes(Array)
 		return
 	}

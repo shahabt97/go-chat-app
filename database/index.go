@@ -11,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+
+
 var clientOptions = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s", hosts.MongoHost))
 
 var client, _ = mongo.Connect(context.Background(), clientOptions)
@@ -50,15 +52,16 @@ func UtilsInitializations() {
 		Options: options.Index().SetUnique(true),
 	})
 
+	// options for quering in database
 	FindPubMessagesOption = options.Find().SetSort(bson.D{{Key: "CreatedAt", Value: 1}})
 	FindPvMessagesOption = options.Find().SetHint("senderReceiverIndex")
+
 }
 
 type PublicMessage struct {
-	Id        string      `bson:"_id" json:"id"`
-	Message   string      `bson:"message" json:"message"`
-	Sender    string `bson:"sender" json:"sender"`
-	CreatedAt time.Time   `bson:"createdAt" json:"createdAt"`
+	Message   string    `bson:"message" json:"message"`
+	Sender    string    `bson:"sender" json:"sender"`
+	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
 }
 
 type PvMessage struct {

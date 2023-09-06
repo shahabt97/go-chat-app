@@ -22,6 +22,7 @@ var Client = &ElasticClient{
 	Client: EsClient,
 }
 
+// for creating a doc in elastic
 func (client *ElasticClient) CreateDoc(Index string, body io.Reader) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -34,6 +35,8 @@ func (client *ElasticClient) CreateDoc(Index string, body io.Reader) error {
 	return nil
 }
 
+// search user based on username or email but in the end return username only
+// username or email must contain search query
 func (client *ElasticClient) SearchUser(q string, indexes ...string) ([]string, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -53,10 +56,9 @@ func (client *ElasticClient) SearchUser(q string, indexes ...string) ([]string, 
 		client.Client.Search.WithBody(strings.NewReader(query)))
 
 	if err != nil {
-		fmt.Println("Error in SearchContain function: ", err)
+		fmt.Println("error in SearchContain function: ", err)
 		return nil, err
 	}
-	// fmt.Println("result: ", result)
 
 	res := make(map[string]interface{})
 
@@ -220,6 +222,8 @@ func (client *ElasticClient) SearchPvMessages(q string, user string, host string
 
 }
 
+// search in all public or pv messages for data insights
+// this function can violate user privacy so must be used carefully
 func (client *ElasticClient) SearchAllMessages(q string, indexes ...string) ([]*AllMessages, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -252,7 +256,7 @@ func (client *ElasticClient) SearchAllMessages(q string, indexes ...string) ([]*
 
 		index := hit.(map[string]interface{})["_index"].(string)
 		data := hit.(map[string]interface{})["_source"].(map[string]interface{})
-		
+
 		objectID, err := primitive.ObjectIDFromHex(data["id"].(string))
 		if err != nil {
 			return nil, err

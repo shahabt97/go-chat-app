@@ -29,6 +29,7 @@ func Websocket(routes *gin.Engine) {
 	go HandleAllPvConnections()
 }
 
+// send a message to all online connections
 func HandleAllConnections() {
 	for {
 		msg := <-Broadcast
@@ -57,6 +58,7 @@ func HandleConn(c *gin.Context) {
 		return
 	}
 
+	// get username from session
 	username := session.Values["username"].(string)
 
 	conn, err := Upgrader.Upgrade(c.Writer, c.Request, nil)
@@ -65,7 +67,6 @@ func HandleConn(c *gin.Context) {
 		return
 	}
 	defer conn.Close()
-
 
 	Clients[conn] = username
 	OnlineUsersChan <- true
@@ -97,6 +98,7 @@ func HandleConn(c *gin.Context) {
 
 }
 
+// sending online users
 func HandleOlineUsers() {
 
 	for {
@@ -118,15 +120,19 @@ func HandleOlineUsers() {
 
 }
 
+// get all public messages in the beginning of websocket connection
 func GetPubMessages(conn *websocket.Conn) {
 
 	var Array = []*database.PublicMessage{}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// first check Redis for messages
 	val, errOfRedis := redisServer.Client.Client.Get(ctx, "pubmessages").Result()
 
 	if errOfRedis != nil {
+
+		// fetch data from database
 		results, err := database.PubMessages.Find(ctx, bson.M{}, database.FindPubMessagesOption)
 
 		if err != nil {
@@ -142,6 +148,8 @@ func GetPubMessages(conn *websocket.Conn) {
 			}
 			Array = append(Array, document)
 		}
+
+		// put data in Redis
 		go redisServer.Client.SetPubMes(&Array)
 
 	} else {
@@ -163,6 +171,8 @@ func GetPubMessages(conn *websocket.Conn) {
 		fmt.Println("error in Marshaling public messages: ", errOfMarshaling)
 		return
 	}
+
+	// send messages via websocket
 	if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
 		conn.Close()
 		return

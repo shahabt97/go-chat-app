@@ -73,7 +73,6 @@ func SavePubMesInRedis(result *mongo.InsertOneResult, jsonData *Event, username 
 	defer cancel()
 
 	newDoc := &database.PublicMessage{
-		Id:        result.InsertedID.(primitive.ObjectID).Hex(),
 		Message:   jsonData.Data.Message,
 		Sender:    username,
 		CreatedAt: jsonData.Data.Timestamp,
@@ -95,6 +94,7 @@ func SavePubMesInRedis(result *mongo.InsertOneResult, jsonData *Event, username 
 	}
 
 	Array = append(Array, newDoc)
+
 	go redisServer.Client.SetPubMes(&Array)
 
 }
