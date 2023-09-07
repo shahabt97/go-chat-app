@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"first/session"
+	"go-chat-app/session"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,23 +1,21 @@
 package routesHanlder
 
 import (
-	"first/controllers"
-	"first/middlewares"
-	websocketServer "first/websocket"
+	"go-chat-app/controllers"
+	"go-chat-app/middlewares"
+	websocketServer "go-chat-app/websocket"
 
 	"github.com/gin-gonic/gin"
 )
 
-func RouteHandlers(routes *gin.Engine){
-
-
+func RouteHandlers(routes *gin.Engine) {
 
 	// session
 	routes.Use(middlewares.SessiosnMiddleware)
 
 	// handling websocket
 	websocketServer.Websocket(routes)
-	
+
 	//homepage
 	routes.GET("/", controllers.HomePageHandler)
 

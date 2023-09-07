@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"first/database"
-	"first/elasticsearch"
-	redisServer "first/redis"
 	"fmt"
+	"go-chat-app/database"
+	"go-chat-app/elasticsearch"
+	redisServer "go-chat-app/redis"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"

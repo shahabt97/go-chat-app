@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"context"
-	"first/database"
-	"first/elasticsearch"
+	"go-chat-app/database"
+	"go-chat-app/elasticsearch"
 	"fmt"
 	"sort"
 	"time"

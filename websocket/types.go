@@ -1,7 +1,7 @@
 package websocketServer
 
 import (
-	"first/database"
+	"go-chat-app/database"
 	"time"
 
 	"github.com/gorilla/websocket"

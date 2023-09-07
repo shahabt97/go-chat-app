@@ -3,9 +3,9 @@ package websocketServer
 import (
 	"context"
 	"encoding/json"
-	"first/database"
-	redisServer "first/redis"
 	"fmt"
+	"go-chat-app/database"
+	redisServer "go-chat-app/redis"
 	"log"
 	"sort"
 

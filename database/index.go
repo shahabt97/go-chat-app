@@ -2,16 +2,14 @@ package database
 
 import (
 	"context"
-	"first/hosts"
 	"fmt"
+	"go-chat-app/hosts"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-
 
 var clientOptions = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s", hosts.MongoHost))
 

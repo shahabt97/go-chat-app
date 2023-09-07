@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"first/database"
+	"go-chat-app/database"
 
-	"first/elasticsearch"
-	"first/session"
-	"first/utils"
 	"fmt"
+	"go-chat-app/elasticsearch"
+	"go-chat-app/session"
+	"go-chat-app/utils"
 	"net/http"
 	"time"
 

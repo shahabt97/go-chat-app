@@ -3,9 +3,9 @@ package redisServer
 import (
 	"context"
 	"encoding/json"
-	"first/database"
-	"first/hosts"
 	"fmt"
+	"go-chat-app/database"
+	"go-chat-app/hosts"
 	"time"
 
 	"github.com/redis/go-redis/v9"

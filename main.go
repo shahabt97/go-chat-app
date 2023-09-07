@@ -1,10 +1,9 @@
 package main
 
 import (
-	"first/database"
-	redisServer "first/redis"
-	routesHanlder "first/routes"
-
+	"go-chat-app/database"
+	redisServer "go-chat-app/redis"
+	routesHanlder "go-chat-app/routes"
 
 	"github.com/gin-gonic/gin"
 )
