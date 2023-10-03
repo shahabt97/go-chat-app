@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"go-chat-app/database"
 
-	"fmt"
 	"go-chat-app/elasticsearch"
 	"go-chat-app/session"
 	"go-chat-app/utils"
+	"fmt"
 	"net/http"
 	"time"
 

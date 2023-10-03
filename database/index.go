@@ -26,7 +26,7 @@ func UtilsInitializations() {
 
 	// public messages indexes
 	PubMessages.Indexes().CreateOne(context.Background(), mongo.IndexModel{
-		Keys:    bson.D{{Key: "CreatedAt", Value: 1}},
+		Keys:    bson.D{{Key: "message", Value: 1}},
 		Options: options.Index(),
 	})
 
@@ -51,7 +51,7 @@ func UtilsInitializations() {
 	})
 
 	// options for quering in database
-	FindPubMessagesOption = options.Find().SetSort(bson.D{{Key: "CreatedAt", Value: 1}})
+	FindPubMessagesOption = options.Find().SetSort(bson.D{{Key: "message", Value: 1}})
 	FindPvMessagesOption = options.Find().SetHint("senderReceiverIndex")
 
 }

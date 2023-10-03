@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"go-chat-app/database"
+	"go-chat-app/rabbitmq"
 	redisServer "go-chat-app/redis"
 	routesHanlder "go-chat-app/routes"
 
@@ -10,6 +12,10 @@ import (
 
 func main() {
 
+	if err := rabbitmq.RabbiInitialization(); err != nil {
+		fmt.Printf("error in connecting to RabbitMQ: %v\n", err)
+	}
+	
 	routes := gin.Default()
 	database.UtilsInitializations()
 

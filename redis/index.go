@@ -104,12 +104,12 @@ func (c *ClientOfRedis) SetPubMes(Array *[]*database.PublicMessage) {
 		go c.SetPubMes(Array)
 		return
 	}
-
+	
 	if err := c.Client.Set(ctx, "pubmessages", jsonData, 10*time.Hour).Err(); err != nil {
 		fmt.Println("error in setting pub messages: ", err)
-
 		// try again to set data in Redis
 		go c.SetPubMes(Array)
 		return
 	}
+
 }
