@@ -1,0 +1,88 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    container_name: app
+    ports:
+      - 8080:8080
+    depends_on:
+      - elasticsearch
+      - redis
+      - rabbitmq
+      - mongo1
+      - mongo2
+      - mongo3
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://user:pass@rabbit:5672 # use the username and password for rabbitmq
+      - MONGO_URL=mongodb://mongo1,mongo2,mongo3/?replicaSet=rs0
+    networks:
+      - my-net # connect to the user-defined network
+
+  elasticsearch:
+    image: elasticsearch:7.14.0
+    container_name: elasticsearch
+    ports:
+      - 9200:9200
+    environment:
+      - discovery.type=single-node
+    networks:
+      - my-net # connect to the user-defined network
+
+  redis:
+    image: redis:6.2.5
+    container_name: redis
+    ports:
+      - 6379:6379
+    networks:
+      - my-net # connect to the user-defined network
+
+  rabbitmq:
+    image: rabbitmq:3.9.5-management
+    container_name: rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    hostname: rabbit # set a custom hostname for rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=user # set the username for rabbitmq
+      - RABBITMQ_DEFAULT_PASS=pass # set the password for rabbitmq
+    networks:
+      - my-net # connect to the user-defined network
+
+  mongo1:
+    image: mongo:4.4.8
+    container_name: mongo1
+    ports:
+      - 27017:27017
+    command: mongod --replSet rs0 --bind_ip_all
+    volumes:
+      - ./mongodata1:/data/db
+    networks:
+      - my-net # connect to the user-defined network
+
+  mongo2:
+    image: mongo:4.4.8
+    container_name: mongo2
+    ports:
+      - 27018:27017
+    command: mongod --replSet rs0 --bind_ip_all
+    volumes:
+      - ./mongodata2:/data/db
+    networks:
+      - my-net # connect to the user-defined network
+
+  mongo3:
+    image: mongo:4.4.8
+    container_name: mongo3
+    ports:
+      - 27019:27017
+    command: mongod --replSet rs0 --bind_ip_all
+    volumes:
+      - ./mongodata3:/data/db
+    networks:
+      - my-net # connect to the user-defined network
+
+networks:
+  my-net: # create a user-defined bridge network for the containers

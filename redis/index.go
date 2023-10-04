@@ -93,7 +93,7 @@ func (c *ClientOfRedis) SetPvMes(username, host string, Array *[]*database.PvMes
 	}
 }
 
-func (c *ClientOfRedis) SetPubMes(Array *[]*database.PublicMessage) {
+func (c *ClientOfRedis) SetPubMes(Array *[]*database.PublicMessage) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -101,15 +101,13 @@ func (c *ClientOfRedis) SetPubMes(Array *[]*database.PublicMessage) {
 	jsonData, errOfMarshaling := json.Marshal(Array)
 	if errOfMarshaling != nil {
 		fmt.Println("error in marshaling pub messages of redis: ", errOfMarshaling)
-		go c.SetPubMes(Array)
-		return
+		return errOfMarshaling
 	}
-	
+
 	if err := c.Client.Set(ctx, "pubmessages", jsonData, 10*time.Hour).Err(); err != nil {
 		fmt.Println("error in setting pub messages: ", err)
-		// try again to set data in Redis
-		go c.SetPubMes(Array)
-		return
+		return err
 	}
+	return nil
 
 }

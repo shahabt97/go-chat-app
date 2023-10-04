@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-chat-app/database"
+	"go-chat-app/rabbitmq"
 	redisServer "go-chat-app/redis"
 	"log"
 	"time"
@@ -83,7 +84,7 @@ func HandleConn(c *gin.Context) {
 			return
 		}
 
-		var jsonData = &Event{}
+		var jsonData = &rabbitmq.Event{}
 		err2 := json.Unmarshal(p, jsonData)
 		if err2 != nil {
 			fmt.Println(err2)
@@ -99,7 +100,11 @@ func HandleConn(c *gin.Context) {
 		}
 
 		// add new message to Mongo ,Elastic and Redis
-		go HandleNewPubMes(jsonData)
+		err = rabbitmq.PubMessagesPublisher(jsonData, rabbitmq.PubMessagePublishMaster)
+		if err != nil {
+			fmt.Printf("error in publishing a pub message: %v\n", err)
+			continue
+		}
 
 		Broadcast <- &Msg{MessageType: messageType, Message: newP}
 

@@ -36,8 +36,9 @@ type MessageContent struct {
 }
 
 type Event struct {
-	EventName string         `json:"eventName"`
-	Data      MessageContent `json:"data"`
+	EventName string                 `json:"eventName"`
+	Data      MessageContent         `json:"data"`
+	// MongoId   *mongo.InsertOneResult `json:"-"`
 }
 
 type PvEvent struct {

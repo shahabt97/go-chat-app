@@ -13,9 +13,11 @@ import (
 
 var clientOptions = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s", hosts.MongoHost))
 
-var client, _ = mongo.Connect(context.Background(), clientOptions)
+var Client, _ = mongo.Connect(context.Background(), clientOptions)
 
-var chat = client.Database("chat")
+
+
+var chat = Client.Database("chat")
 var Users = chat.Collection("users")
 var PvMessages = chat.Collection("pv-messages")
 var PubMessages = chat.Collection("public-messages")

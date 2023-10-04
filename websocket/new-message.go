@@ -28,8 +28,6 @@ func HandleNewPubMes(jsonData *Event) {
 
 	if errOfMongo != nil {
 		fmt.Println("error storing new public message in Mongo: ", errOfMongo)
-		time.Sleep(10 * time.Second)
-		go HandleNewPubMes(jsonData)
 		return
 	}
 
@@ -51,8 +49,6 @@ func SavePubMesInES(result *mongo.InsertOneResult, jsonData *Event) {
 	pubJsonBytes, errorOfMar := json.Marshal(pubMessageJson)
 	if errorOfMar != nil {
 		fmt.Println("Error in Marshaling user data for elastic: ", errorOfMar)
-		time.Sleep(10 * time.Second)
-		go SavePubMesInES(result, jsonData)
 		return
 	}
 
@@ -60,8 +56,6 @@ func SavePubMesInES(result *mongo.InsertOneResult, jsonData *Event) {
 	errPubElas := elasticsearch.Client.CreateDoc("pubmessages", pubReader)
 	if errPubElas != nil {
 		fmt.Println("Error in creating user in elastic: ", errPubElas)
-		time.Sleep(10 * time.Second)
-		go SavePubMesInES(result, jsonData)
 		return
 	}
 
@@ -83,7 +77,7 @@ func SavePubMesInRedis(result *mongo.InsertOneResult, jsonData *Event) {
 	val, errOfRedis := redisServer.Client.Client.Get(ctx, "pubmessages").Result()
 
 	if errOfRedis != nil {
-		go SavePubMesInRedis(result, jsonData)
+		fmt.Println("error in getting data from Redis: ", errOfRedis)
 		return
 	}
 
@@ -95,7 +89,10 @@ func SavePubMesInRedis(result *mongo.InsertOneResult, jsonData *Event) {
 
 	Array = append(Array, newDoc)
 
-	go redisServer.Client.SetPubMes(&Array)
+	err:= redisServer.Client.SetPubMes(&Array)
+	if err != nil {
+		
+	}
 
 }
 

@@ -6,16 +6,20 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-var Channel *amqp.Channel
+func RabbitMQInitialization(publisher *PubMessagePublishingMaster, consumer *PubMessageConsumerMaster) error {
 
-func RabbiInitialization() error {
-
-	var ErrOfConnectingRabbit error
-
-	Channel, ErrOfConnectingRabbit = Init()
-	if ErrOfConnectingRabbit != nil {
-		return ErrOfConnectingRabbit
+	channel, errOfConnectingRabbit := Init()
+	if errOfConnectingRabbit != nil {
+		return errOfConnectingRabbit
 	}
+
+	err := PubMessageQueueHandler(publisher, consumer, channel)
+	if err != nil {
+		return err
+	}
+
+	PubMessagesConsumer(consumer, publisher)
+
 	return nil
 }
 
