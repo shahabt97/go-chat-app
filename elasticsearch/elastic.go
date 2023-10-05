@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go-chat-app/config"
 	"io"
 	"strings"
 	"time"
@@ -12,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var EsClient, Err = es.NewDefaultClient()
+var EsClient, Err = es.NewClient(es.Config{Addresses: []string{config.ConfigData.ElasticURI}})
 
 type ElasticClient struct {
 	Client *es.Client

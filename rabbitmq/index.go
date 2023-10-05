@@ -2,6 +2,7 @@ package rabbitmq
 
 import (
 	"fmt"
+	"go-chat-app/config"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -25,7 +26,7 @@ func RabbitMQInitialization(publisher *PubMessagePublishingMaster, consumer *Pub
 
 func Init() (*amqp.Channel, error) {
 
-	conn, err := amqp.Dial("amqp://shahab:83000000@localhost:5672/chat-application")
+	conn, err := amqp.Dial(config.ConfigData.RabbitMQ)
 
 	if err != nil {
 		fmt.Println("error in connecting to rabbitMQ: ", err)

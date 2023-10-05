@@ -2,8 +2,7 @@ package database
 
 import (
 	"context"
-	"fmt"
-	"go-chat-app/hosts"
+	"go-chat-app/config"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,20 +10,34 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var clientOptions = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s", hosts.MongoHost))
+var clientOptions *options.ClientOptions
 
-var Client, _ = mongo.Connect(context.Background(), clientOptions)
+var Client *mongo.Client
+var ErrOfDB error
 
-
-
-var chat = Client.Database("chat")
-var Users = chat.Collection("users")
-var PvMessages = chat.Collection("pv-messages")
-var PubMessages = chat.Collection("public-messages")
+var chat *mongo.Database
+var Users *mongo.Collection
+var PvMessages *mongo.Collection
+var PubMessages *mongo.Collection
 var FindPubMessagesOption *options.FindOptions
 var FindPvMessagesOption *options.FindOptions
 
-func UtilsInitializations() {
+func UtilsInitializations() error {
+
+	// configurations
+
+	clientOptions = options.Client().ApplyURI(config.ConfigData.MongoURI)
+
+	Client, ErrOfDB = mongo.Connect(context.Background(), clientOptions)
+
+	if ErrOfDB != nil {
+		return ErrOfDB
+	}
+
+	chat = Client.Database("chat")
+	Users = chat.Collection("users")
+	PvMessages = chat.Collection("pv-messages")
+	PubMessages = chat.Collection("public-messages")
 
 	// public messages indexes
 	PubMessages.Indexes().CreateOne(context.Background(), mongo.IndexModel{
@@ -56,6 +69,7 @@ func UtilsInitializations() {
 	FindPubMessagesOption = options.Find().SetSort(bson.D{{Key: "message", Value: 1}})
 	FindPvMessagesOption = options.Find().SetHint("senderReceiverIndex")
 
+	return nil
 }
 
 type PublicMessage struct {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go-chat-app/config"
 	"go-chat-app/database"
-	"go-chat-app/hosts"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -15,13 +15,29 @@ type ClientOfRedis struct {
 	Client *redis.Client
 }
 
-var client = redis.NewClient(&redis.Options{
-	Addr: hosts.RedisHost,
-	DB:   0,
-})
+var client *redis.Client
 
-var Client = &ClientOfRedis{
-	Client: client,
+var Client *ClientOfRedis
+
+func Init() error {
+
+	client = redis.NewClient(&redis.Options{
+		Addr: config.ConfigData.RedisHost,
+		DB:   0,
+	})
+
+	status := client.Ping(context.Background())
+
+	err := status.Err()
+	if err != nil {
+		return err
+	}
+
+	Client = &ClientOfRedis{
+		Client: client,
+	}
+	return nil
+
 }
 
 func (c *ClientOfRedis) Keys() ([]string, error) {
