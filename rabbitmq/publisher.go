@@ -21,7 +21,7 @@ func NewPublisher(channel *amqp.Channel, queue string) (*Publisher, error) {
 
 	_, err := channel.QueueDeclare(
 		queue,
-		false, // durable
+		true, // durable
 		false, // delete when unused
 		false, // exclusive
 		false, // no-wait

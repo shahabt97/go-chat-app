@@ -13,7 +13,6 @@ import (
 var clientOptions *options.ClientOptions
 
 var Client *mongo.Client
-var ErrOfDB error
 
 var chat *mongo.Database
 var Users *mongo.Collection
@@ -22,16 +21,16 @@ var PubMessages *mongo.Collection
 var FindPubMessagesOption *options.FindOptions
 var FindPvMessagesOption *options.FindOptions
 
-func UtilsInitializations() error {
+func UtilsInitializations() (err error) {
 
 	// configurations
 
 	clientOptions = options.Client().ApplyURI(config.ConfigData.MongoURI)
 
-	Client, ErrOfDB = mongo.Connect(context.Background(), clientOptions)
+	Client, err = mongo.Connect(context.Background(), clientOptions)
 
-	if ErrOfDB != nil {
-		return ErrOfDB
+	if err != nil {
+		return err
 	}
 
 	chat = Client.Database("chat")

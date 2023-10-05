@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go-chat-app/database"
 	"go-chat-app/elasticsearch"
@@ -13,7 +14,6 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func PubMessagesPublisher(jsonData *Event, master *PubMessagePublishingMaster) error {
@@ -80,7 +80,8 @@ func PubMessageQueueHandler(publisher *PubMessagePublishingMaster, consumer *Pub
 
 func PubMesInESConsumer(consumer *PubMessageConsumerMaster) {
 
-	for message := range consumer.Redis {
+	for message := range consumer.Elastic {
+
 		pubReader := bytes.NewReader(message.Body)
 		errPubElas := elasticsearch.Client.CreateDoc("pubmessages", pubReader)
 		if errPubElas != nil {
@@ -89,13 +90,11 @@ func PubMesInESConsumer(consumer *PubMessageConsumerMaster) {
 		}
 		message.Ack(false)
 	}
+	panic(errors.New("elastic consumer channel was closed"))
 
 }
 
 func PubMesInRedisConsumer(consumer *PubMessageConsumerMaster) {
-	
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	for message := range consumer.Redis {
 
@@ -115,14 +114,16 @@ func PubMesInRedisConsumer(consumer *PubMessageConsumerMaster) {
 
 		var Array = []*database.PublicMessage{}
 
-		val, errOfRedis := redisServer.Client.Client.Get(ctx, "pubmessages").Bytes()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		val, errOfRedis := redisServer.Client.Client.Get(ctx, "pubmessages").Result()
+		cancel()
 
 		if errOfRedis != nil {
 			fmt.Println("error in getting data from Redis: ", errOfRedis)
 			continue
 		}
 
-		errOfUnMar := json.Unmarshal(val, &Array)
+		errOfUnMar := json.Unmarshal([]byte(val), &Array)
 		if errOfUnMar != nil {
 			fmt.Println("error in unmarshling: ", errOfUnMar)
 			continue
@@ -137,13 +138,11 @@ func PubMesInRedisConsumer(consumer *PubMessageConsumerMaster) {
 		}
 		message.Ack(false)
 	}
+	panic(errors.New("redis consumer channel was closed"))
 
 }
 
 func PubMessagesInMongoConsumer(publisher *PubMessagePublishingMaster, consumer *PubMessageConsumerMaster) {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	for message := range consumer.Mongo {
 
@@ -155,52 +154,38 @@ func PubMessagesInMongoConsumer(publisher *PubMessagePublishingMaster, consumer 
 			continue
 		}
 
-		session, errInSession := database.Client.StartSession()
-
-		if errInSession != nil {
-			fmt.Printf("error in creating session: %v \n", errInSession)
-			continue
-		}
-
-		_, err := session.WithTransaction(ctx, func(sc mongo.SessionContext) (interface{}, error) {
-
-			result, errOfMongo := database.PubMessages.InsertOne(ctx, bson.D{
-				{Key: "message", Value: jsonData.Data.Message},
-				{Key: "sender", Value: jsonData.Data.Username},
-				{Key: "createdAt", Value: jsonData.Data.Timestamp},
-			})
-
-			if errOfMongo != nil {
-				fmt.Println("error storing new public message in Mongo: ", errOfMongo)
-				return nil, errOfMongo
-			}
-
-			pubMessageJson := &elasticsearch.PubMessageIndex{
-				Id:      result.InsertedID.(primitive.ObjectID).Hex(),
-				Message: jsonData.Data.Message,
-			}
-
-			p, errOfMarshaling := json.Marshal(pubMessageJson)
-
-			if errOfMarshaling != nil {
-				return nil, errOfMarshaling
-			}
-
-			errOfPublishingToElastic := publisher.Elastic.NewPublish(p, "application/json")
-
-			if errOfPublishingToElastic != nil {
-				return nil, errOfPublishingToElastic
-			}
-			return nil, nil
-
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		result, errOfMongo := database.PubMessages.InsertOne(ctx, bson.D{
+			{Key: "message", Value: jsonData.Data.Message},
+			{Key: "sender", Value: jsonData.Data.Username},
+			{Key: "createdAt", Value: jsonData.Data.Timestamp},
 		})
-
-		if err != nil {
+		cancel()
+		
+		if errOfMongo != nil {
+			fmt.Println("error storing new public message in Mongo: ", errOfMongo)
 			continue
 		}
 
-		message.Ack(false)
+		pubMessageJson := &elasticsearch.PubMessageIndex{
+			Id:      result.InsertedID.(primitive.ObjectID).Hex(),
+			Message: jsonData.Data.Message,
+		}
 
+		p, errOfMarshaling := json.Marshal(pubMessageJson)
+
+		if errOfMarshaling != nil {
+			fmt.Println("error in marshaling new public message: ", errOfMarshaling)
+		}
+
+		errOfPublishingToElastic := publisher.Elastic.NewPublish(p, "application/json")
+
+		if errOfPublishingToElastic != nil {
+			fmt.Println("error in publishing new public message to elastic: ", errOfPublishingToElastic)
+
+		}
+		message.Ack(false)
 	}
+	panic(errors.New("mongo consumer channel was closed"))
 
 }

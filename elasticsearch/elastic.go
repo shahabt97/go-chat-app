@@ -13,14 +13,27 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var EsClient, Err = es.NewClient(es.Config{Addresses: []string{config.ConfigData.ElasticURI}})
+var EsClient *es.Client
 
 type ElasticClient struct {
 	Client *es.Client
 }
 
-var Client = &ElasticClient{
-	Client: EsClient,
+var Client *ElasticClient
+
+func Init() (err error) {
+
+	EsClient, err = es.NewClient(es.Config{Addresses: []string{config.ConfigData.ElasticURI}})
+
+	if err != nil {
+		return err
+	}
+
+	Client = &ElasticClient{
+		Client: EsClient,
+	}
+	return nil
+
 }
 
 // for creating a doc in elastic
