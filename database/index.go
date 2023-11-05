@@ -27,7 +27,10 @@ func UtilsInitializations() (err error) {
 
 	clientOptions = options.Client().ApplyURI(config.ConfigData.MongoURI)
 
-	Client, err = mongo.Connect(context.Background(), clientOptions)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	Client, err = mongo.Connect(ctx, clientOptions)
 
 	if err != nil {
 		return err

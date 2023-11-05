@@ -7,20 +7,22 @@ import (
 	"go-chat-app/database"
 	"go-chat-app/rabbitmq"
 	redisServer "go-chat-app/redis"
-	"log"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
 	"github.com/gorilla/websocket"
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-var Clients = make(map[*websocket.Conn]string)
-
-var Broadcast = make(chan *Msg, 1024)
-
-var OnlineUsersChan = make(chan bool, 1024)
+var (
+	Clients         = make(map[*websocket.Conn]string)
+	Broadcast       = make(chan *Msg, 1024)
+	OnlineUsersChan = make(chan bool, 1024)
+	ClientsMutex    = sync.RWMutex{}
+)
 
 func Websocket(routes *gin.Engine) {
 	routes.GET("/ws", HandleConn)
@@ -36,6 +38,7 @@ func HandleAllConnections() {
 		msg := <-Broadcast
 
 		go func() {
+			ClientsMutex.RLock()
 			for client := range Clients {
 				go func(cl *websocket.Conn) {
 					if err := cl.WriteMessage(msg.MessageType, msg.Message); err != nil {
@@ -44,6 +47,7 @@ func HandleAllConnections() {
 					}
 				}(client)
 			}
+			ClientsMutex.RUnlock()
 		}()
 	}
 }
@@ -65,12 +69,16 @@ func HandleConn(c *gin.Context) {
 
 	conn, err := Upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Println(err)
+		fmt.Printf("error in upgrading http to websocket: %v\n", err)
 		return
 	}
+
 	defer conn.Close()
 
+	ClientsMutex.Lock()
 	Clients[conn] = username
+	ClientsMutex.Unlock()
+
 	OnlineUsersChan <- true
 
 	go GetPubMessages(conn)
@@ -79,7 +87,11 @@ func HandleConn(c *gin.Context) {
 
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
+
+			ClientsMutex.Lock()
 			delete(Clients, conn)
+			ClientsMutex.Unlock()
+
 			OnlineUsersChan <- true
 			return
 		}
@@ -118,20 +130,26 @@ func HandleOlineUsers() {
 	for {
 		<-OnlineUsersChan
 		Array := []string{}
+
+		ClientsMutex.RLock()
 		for client := range Clients {
 			Array = append(Array, Clients[client])
 		}
+		ClientsMutex.RUnlock()
+
 		onlineUsersEvent := &OnlineUsersEvent{EventName: "online users", Data: struct{ OnlineUsers []string }{OnlineUsers: Array}}
 		onlineEventJson, _ := json.Marshal(onlineUsersEvent)
 
+		ClientsMutex.RLock()
 		for client := range Clients {
 			if err := client.WriteMessage(websocket.TextMessage, onlineEventJson); err != nil {
 				fmt.Println("error in sending online users: ", err)
 				client.Close()
 			}
 		}
-	}
+		ClientsMutex.RUnlock()
 
+	}
 }
 
 // get all public messages in the beginning of websocket connection
@@ -142,29 +160,43 @@ func GetPubMessages(conn *websocket.Conn) {
 	defer cancel()
 
 	// first check Redis for messages
-	val, errOfRedis := redisServer.Client.Client.Get(ctx, "pubmessages").Result()
+	val, err := redisServer.Client.Client.Get(ctx, "pubmessages").Result()
 
-	if errOfRedis != nil {
+	if err != nil {
 
-		// fetch data from database
-		results, err := database.PubMessages.Find(ctx, bson.M{}, database.FindPubMessagesOption)
+		if err == redis.Nil {
 
-		if err != nil {
-			fmt.Println("error in getting all public messages is: ", err)
-			return
-		}
+			// fetch data from database
+			results, err := database.PubMessages.Find(ctx, bson.M{}, database.FindPubMessagesOption)
 
-		for results.Next(ctx) {
-			var document = &database.PublicMessage{}
-			if err := results.Decode(document); err != nil {
-				fmt.Println("error in reading all results of public messages: ", err)
+			if err != nil {
+				fmt.Println("error in getting all public messages is: ", err)
+				conn.Close()
 				return
 			}
-			Array = append(Array, document)
-		}
 
-		// put data in Redis
-		go redisServer.Client.SetPubMes(&Array)
+			for results.Next(ctx) {
+				var document = &database.PublicMessage{}
+				if err := results.Decode(document); err != nil {
+					fmt.Println("error in reading all results of public messages: ", err)
+					conn.Close()
+					return
+				}
+				Array = append(Array, document)
+			}
+
+			go func() {
+				// put data in Redis
+				err := redisServer.Client.SetPubMes(&Array)
+				if err != nil {
+					panic(err)
+				}
+			}()
+
+		} else {
+			fmt.Printf("error in getting pubMessages from Redis: %v\n", err)
+			panic(err)
+		}
 
 	} else {
 		err := json.Unmarshal([]byte(val), &Array)
@@ -179,10 +211,10 @@ func GetPubMessages(conn *websocket.Conn) {
 		Data:      &Array,
 	}
 
-	jsonData, errOfMarshaling := json.Marshal(allMessages)
+	jsonData, err := json.Marshal(allMessages)
 
-	if errOfMarshaling != nil {
-		fmt.Println("error in Marshaling public messages: ", errOfMarshaling)
+	if err != nil {
+		fmt.Println("error in Marshaling public messages: ", err)
 		return
 	}
 
