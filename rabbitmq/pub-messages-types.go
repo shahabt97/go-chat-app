@@ -4,12 +4,13 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	rabbit "github.com/shahabt97/rabbit-pool"
 )
 
 type PubMessagePublishingMaster struct {
-	Mongo   *Publisher
-	Elastic *Publisher
-	Redis   *Publisher
+	Mongo   *rabbit.Publisher
+	Elastic *rabbit.Publisher
+	Redis   *rabbit.Publisher
 }
 
 type PubMessageConsumerMaster struct {

@@ -5,16 +5,17 @@ import (
 	"go-chat-app/config"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	rabbit "github.com/shahabt97/rabbit-pool"
 )
 
 func RabbitMQInitialization(publisher *PubMessagePublishingMaster, consumer *PubMessageConsumerMaster) error {
 
-	channel, errOfConnectingRabbit := Init()
-	if errOfConnectingRabbit != nil {
-		return errOfConnectingRabbit
+	pool, err := Init()
+	if err != nil {
+		return err
 	}
 
-	err := PubMessageQueueHandler(publisher, consumer, channel)
+	err = PubMessageQueueHandler(publisher, consumer, pool)
 	if err != nil {
 		return err
 	}
@@ -24,7 +25,7 @@ func RabbitMQInitialization(publisher *PubMessagePublishingMaster, consumer *Pub
 	return nil
 }
 
-func Init() (*amqp.Channel, error) {
+func Init() (*rabbit.ConnectionPool, error) {
 
 	conn, err := amqp.Dial(config.ConfigData.RabbitMQ)
 
@@ -33,8 +34,8 @@ func Init() (*amqp.Channel, error) {
 		return nil, err
 	}
 
-	ch, _ := conn.Channel()
+	pool := rabbit.NewPool(conn, 15, 10)
 
-	return ch, nil
+	return pool, nil
 
 }
