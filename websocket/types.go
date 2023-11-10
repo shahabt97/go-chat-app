@@ -2,6 +2,7 @@ package websocketServer
 
 import (
 	"go-chat-app/database"
+	"net/http"
 	"sync"
 	"time"
 
@@ -11,6 +12,11 @@ import (
 var Upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin:     CheckOrigin,
+}
+
+func CheckOrigin(r *http.Request) bool {
+	return true
 }
 
 type Msg struct {

@@ -1,6 +1,7 @@
 package websocketServer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"go-chat-app/config"
@@ -15,7 +16,6 @@ import (
 	"time"
 
 	"net/http/httptest"
-	"strings"
 
 	"testing"
 
@@ -44,9 +44,9 @@ func TestWS(t *testing.T) {
 		log.Fatalf("error in connecting to database: %v\n", err)
 	}
 
-	if err := rabbitmq.RabbitMQInitialization(rabbitmq.PubMessagePublishMaster, rabbitmq.PubMessageConsumeMaster); err != nil {
-		log.Fatalf("error in connecting to RabbitMQ: %v\n", err)
-	}
+	// if err := rabbitmq.RabbitMQInitialization(rabbitmq.PubMessagePublishMaster, rabbitmq.PubMessageConsumeMaster); err != nil {
+	// 	log.Fatalf("error in connecting to RabbitMQ: %v\n", err)
+	// }
 
 	go HandleAllConnections()
 	go HandleOlineUsers()
@@ -72,59 +72,69 @@ func TestWS(t *testing.T) {
 
 	var mainMutex sync.Mutex
 
-	for i := 0; i < 3; i++ {
-		go func() {
-			// Create a test client with the test server URL
-			wsURL := "ws" + strings.TrimPrefix(s.URL, "http") + "/ws"
-			// localhost:8080
-			mainMutex.Lock()
-			c, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
-			mainMutex.Unlock()
+	for {
 
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer c.Close()
-
-			time.Sleep(1 * time.Second)
-
+		for i := 0; i < 200; i++ {
 			go func() {
-				data := rabbitmq.Event{
-					EventName: "chat message",
-					Data: rabbitmq.MessageContent{
-						Message:   "hello everyone",
-						Username:  "ShahabTayebi",
-						Timestamp: time.Now()}}
+				// Create a test client with the test server URL
+				// strings.TrimPrefix(s.URL, "http")
+				wsURL := "ws" + "://localhost:8080" + "/ws"
+				fmt.Println("url is: ", wsURL)
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				// time.Sleep(3 * time.Second)
 
-				p, err := json.Marshal(data)
+				mainMutex.Lock()
+				c, _, err := websocket.DefaultDialer.DialContext(ctx, wsURL, nil)
+				mainMutex.Unlock()
+
 				if err != nil {
-					fmt.Printf("error in Marshaling test message to write in client test: %v\n", err)
+					fmt.Printf("error in connecting to websocket server: %v\n", err)
 					return
 				}
+				defer c.Close()
 
-				for {
-					time.Sleep(5 * time.Second)
-					err = c.WriteMessage(websocket.TextMessage, p)
+				time.Sleep(1 * time.Second)
+
+				go func() {
+					defer c.Close()
+					data := rabbitmq.Event{
+						EventName: "chat message",
+						Data: rabbitmq.MessageContent{
+							Message:   "hello everyone",
+							Username:  "ShahabTayebi",
+							Timestamp: time.Now()}}
+
+					p, err := json.Marshal(data)
 					if err != nil {
-						fmt.Printf("error in writing message in client test: %v\n", err)
+						fmt.Printf("error in Marshaling test message to write in client test: %v\n", err)
 						return
 					}
+
+					for {
+						time.Sleep(7 * time.Second)
+						err = c.WriteMessage(websocket.TextMessage, p)
+						if err != nil {
+							fmt.Printf("error in writing message in client test: %v\n", err)
+							return
+						}
+					}
+				}()
+
+				for {
+					_, msg, err := c.ReadMessage()
+					if err != nil {
+						fmt.Printf("error in reading message in client test: %v\n", err)
+						return
+					}
+					fmt.Printf("\n\nmessage in front is: %v \n\n", string(msg))
 				}
 			}()
 
-			for {
-				_, msg, err := c.ReadMessage()
-				if err != nil {
-					fmt.Printf("error in reading message in client test: %v\n", err)
-					return
-				}
-				fmt.Printf("\n\nmessage in front is: %v \n\n", string(msg))
-			}
-		}()
+		}
 
+		time.Sleep(20 * time.Second)
 	}
-
-	select {}
 
 }
 

@@ -1,90 +1,33 @@
 version: "3.9"
 services:
-  app:
-    build: .
-    container_name: app
+  chatapp-go:
+    container_name: chatapp-go
+    build:
+      context: ../first
+      dockerfile: Dockerfile
     ports:
-      - 8080:8080
-    depends_on:
-      - elasticsearch
-      - redis
-      - rabbitmq
-      - mongo1
-      - mongo2
-      - mongo3
+      - 8081:8080
+    # depends_on:
+    #   - nginx
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - REDIS_URL=redis:6379
-      - RABBITMQ_URL=amqp://shahab:83000000@rabbit:5672/my_vhost # use the username and password for rabbitmq
-      - MONGO_URL=mongodb://mongo1,mongo2,mongo3/?replicaSet=rs0
+      - RABBITMQ_URL=amqp://shahab:83000000@rabbitmq:5672/my_chat_app
+      - MONGO_URL=mongodb://mongo:27017
     networks:
-      - my-net # connect to the user-defined network
+      - my-chatapp-net # connect to the user-defined network
 
-  elasticsearch:
-    image: elasticsearch:7.17.10
-    container_name: elasticsearch
+  nginx:
+    container_name: nginx
+    image: nginx:latest
     ports:
-      - 9200:9200
-    environment:
-      - discovery.type=single-node
-    networks:
-      - my-net # connect to the user-defined network
-
-  redis:
-    image: redis:latest
-    container_name: redis
-    ports:
-      - 6379:6379
-    networks:
-      - my-net # connect to the user-defined network
-
-  rabbitmq:
-    image: rabbitmq:3.9.29-management
-    container_name: rabbitmq
-    ports:
-      - 5672:5672
-      - 15672:15672
-    hostname: rabbit # set a custom hostname for rabbitmq
-    environment:
-      - RABBITMQ_DEFAULT_USER=shahab # set the username for rabbitmq
-      - RABBITMQ_DEFAULT_PASS=83000000 # set the password for rabbitmq
-      - RABBITMQ_DEFAULT_VHOST=my_vhost # set the default virtual host for rabbitmq
-
-    networks:
-      - my-net # connect to the user-defined network
-
-  mongo1:
-    image: mongo:5
-    container_name: mongo1
-    ports:
-      - 27017:27017
-    command: mongod --replSet rs0 --bind_ip_all
+      - 8080:80 # expose and map the nginx port
     volumes:
-      - ./mongodata1:/data/db
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf # mount the custom nginx.conf file
+    depends_on:
+      - chatapp-go
     networks:
-      - my-net # connect to the user-defined network
-
-  mongo2:
-    image: mongo:5
-    container_name: mongo2
-    ports:
-      - 27018:27017
-    command: mongod --replSet rs0 --bind_ip_all
-    volumes:
-      - ./mongodata2:/data/db
-    networks:
-      - my-net # connect to the user-defined network
-
-  mongo3:
-    image: mongo:5
-    container_name: mongo3
-    ports:
-      - 27019:27017
-    command: mongod --replSet rs0 --bind_ip_all
-    volumes:
-      - ./mongodata3:/data/db
-    networks:
-      - my-net # connect to the user-defined network
+      - my-chatapp-net # connect to the user-defined network
 
 networks:
-  my-net: # create a user-defined bridge network for the containers
+  my-chatapp-net: # create a user-defined bridge network for the containers

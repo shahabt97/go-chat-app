@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -17,10 +17,10 @@ var ConfigData = &Config{}
 func EnvExtractor() error {
 
 	// load env file to ENV
-	if err := godotenv.Load(); err != nil {
-		return err
-	}
-
+	// if err := godotenv.Load(); err != nil {
+	// 	return err
+	// }
+		
 	// load env into Config struct
 	if err := cleanenv.ReadEnv(ConfigData); err != nil {
 		return err

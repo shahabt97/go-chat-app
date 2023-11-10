@@ -4,17 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+
 	"github.com/gin-gonic/gin"
+
+	"go-chat-app/database"
+	"go-chat-app/rabbitmq"
+	redisServer "go-chat-app/redis"
+	"sync"
+	"time"
+
 	"github.com/gorilla/sessions"
 	"github.com/gorilla/websocket"
 	"github.com/redis/go-redis/v9"
 	"github.com/samber/lo"
-	"go-chat-app/database"
-	"go-chat-app/rabbitmq"
-	redisServer "go-chat-app/redis"
 	"go.mongodb.org/mongo-driver/bson"
-	"sync"
-	"time"
 )
 
 var (
@@ -68,6 +72,7 @@ func HandleConn(c *gin.Context) {
 
 	// get username from session
 	username := session.Values["username"].(string)
+	// username := GenerateRandomString(40)
 
 	conn, err := Upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -242,4 +247,14 @@ func GetPubMessages(conn *websocket.Conn, mu *sync.Mutex) {
 	}
 	mu.Unlock()
 
+}
+
+func GenerateRandomString(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	rand.Seed(time.Now().UnixNano())
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }
