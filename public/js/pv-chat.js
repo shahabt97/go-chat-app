@@ -2,9 +2,11 @@ async function init() {
   const path = window.location.pathname;
   const hostUser = path.split("/")[3];
 
-
   // Connect to Socket.IO server
   function connection() {
+    const chatBox = document.getElementById("chatBox");
+    chatBox.innerHTML = "";
+
     const socket = new WebSocket(`ws://${hostAndPort}/ws/pv?host=${hostUser}`);
 
     const inputBoxForm = document.getElementById("inputBoxForm");

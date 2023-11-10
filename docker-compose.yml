@@ -1,21 +1,77 @@
 version: "3.9"
+name: golang-chatapp
 services:
   chatapp-go:
-    container_name: chatapp-go
+    container_name: app
+    image: go-chatapp:1.2
     build:
       context: ../first
       dockerfile: Dockerfile
+      
     ports:
       - 8081:8080
     # depends_on:
     #   - nginx
     environment:
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - REDIS_URL=redis:6379
-      - RABBITMQ_URL=amqp://shahab:83000000@rabbitmq:5672/my_chat_app
-      - MONGO_URL=mongodb://mongo:27017
+      - ELASTICSEARCH_URL=http://elasticsearch-comp:9200
+      - REDIS_URL=redis-comp:6379
+      - RABBITMQ_URL=amqp://shahab:83000000@rabbitmq-comp:5672/my_chat_app
+      - MONGO_URL=mongodb://mongo-comp:27017
     networks:
-      - my-chatapp-net # connect to the user-defined network
+      - my-chatapp-net
+    depends_on:
+      - mongo
+      - elasticsearch
+      - redis
+      - rabbitmq
+
+  rabbitmq:
+    image: rabbitmq:3.13.0-rc.2-management
+    container_name: rabbitmq-comp
+    hostname: myrabbit
+    environment:
+      - RABBITMQ_DEFAULT_VHOST=my_chat_app
+      - RABBITMQ_DEFAULT_USER=shahab
+      - RABBITMQ_DEFAULT_PASS=83000000
+    ports:
+      - 15672:15672
+      - 5672:5672
+    networks:
+      - my-chatapp-net
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+  redis:
+    image: redis:latest
+    container_name: redis-comp
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/data
+    networks:
+      - my-chatapp-net
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo-comp
+    ports:
+      - 27017:27017
+    networks:
+      - my-chatapp-net
+    volumes:
+      - mongo-data:/data/db
+
+  elasticsearch:
+    image: elasticsearch:7.17.10
+    container_name: elasticsearch-comp
+    environment:
+      - discovery.type=single-node
+    ports:
+      - 9200:9200
+    networks:
+      - my-chatapp-net
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
 
   nginx:
     container_name: nginx
@@ -27,7 +83,13 @@ services:
     depends_on:
       - chatapp-go
     networks:
-      - my-chatapp-net # connect to the user-defined network
+      - my-chatapp-net
 
 networks:
-  my-chatapp-net: # create a user-defined bridge network for the containers
+  my-chatapp-net:
+
+volumes:
+  rabbitmq-data:
+  redis-data:
+  mongo-data:
+  elasticsearch-data:

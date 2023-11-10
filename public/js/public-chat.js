@@ -2,13 +2,13 @@ async function init() {
   // Connect to Socket.IO server
 
   const username = Cookies.get("username");
-  console.log("Value of my-cookie:", username);
-  const myCookieValue2 = Cookies.get("log-session");
-  console.log("Value of my-cookie2:", myCookieValue2);
 
   let socket;
 
   function connection() {
+    const chatBox = document.getElementById("chatBox");
+    chatBox.innerHTML = "";
+
     socket = new WebSocket(`ws://${hostAndPort}/ws`);
 
     const inputBoxForm = document.getElementById("inputBoxForm");
@@ -85,12 +85,11 @@ async function init() {
       }
     };
 
-
     socket.onclose = (event) => {
       socket.close();
+      console.log("connection closed");
       connection();
     };
-
   }
 
   async function getMessages(messages) {
