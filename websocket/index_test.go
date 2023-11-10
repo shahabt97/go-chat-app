@@ -27,7 +27,7 @@ func TestWebsocket(t *testing.T) {
 		}
 		defer conn.Close()
 
-		GetPubMessages(conn)
+		// GetPubMessages(conn)
 
 		defer redisServer.Client.Client.Close()
 

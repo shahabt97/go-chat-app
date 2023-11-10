@@ -117,7 +117,7 @@ func PubMesInRedisConsumer(consumer *PubMessageConsumerMaster) {
 		cancel()
 
 		if err != nil {
-			// fmt.Println("error in getting data from Redis: ", err)
+			fmt.Println("error in getting data from Redis: ", err)
 			continue
 		}
 

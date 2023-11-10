@@ -2,6 +2,7 @@ package websocketServer
 
 import (
 	"go-chat-app/database"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -36,8 +37,8 @@ type MessageContent struct {
 }
 
 type Event struct {
-	EventName string                 `json:"eventName"`
-	Data      MessageContent         `json:"data"`
+	EventName string         `json:"eventName"`
+	Data      MessageContent `json:"data"`
 	// MongoId   *mongo.InsertOneResult `json:"-"`
 }
 
@@ -66,4 +67,9 @@ type AllPubMessages struct {
 type AllPvMessages struct {
 	EventName string                `json:"eventName"`
 	Data      []*database.PvMessage `json:"data"`
+}
+
+type ClientDataInPub struct {
+	Username string
+	Mu       sync.Mutex
 }
