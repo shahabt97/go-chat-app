@@ -1,30 +1,37 @@
 version: "3.9"
 name: golang-chatapp
+
 services:
+  # Golang application service
   chatapp-go:
     container_name: app
     image: go-chatapp:1.2
     build:
       context: ../first
       dockerfile: Dockerfile
-      
     ports:
       - 8081:8080
-    # depends_on:
-    #   - nginx
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch-comp:9200
+      - ELASTICSEARCH_PASSWORD=83000000
+      - ELASTICSEARCH_USERNAME=shahab
       - REDIS_URL=redis-comp:6379
       - RABBITMQ_URL=amqp://shahab:83000000@rabbitmq-comp:5672/my_chat_app
-      - MONGO_URL=mongodb://mongo-comp:27017
+      - MONGO_URL=mongodb://mongo-comp:27017/
+      - REDIS_PASSWORD=83000000
     networks:
       - my-chatapp-net
     depends_on:
-      - mongo
-      - elasticsearch
-      - redis
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      mongo:
+        condition: service_started
+      elasticsearch:
+        condition: service_started
+      redis:
+        condition: service_started
 
+  # RabbitMQ service
   rabbitmq:
     image: rabbitmq:3.13.0-rc.2-management
     container_name: rabbitmq-comp
@@ -38,41 +45,78 @@ services:
       - 5672:5672
     networks:
       - my-chatapp-net
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 10s
+      retries: 2
+      start_period: 1s
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
 
+  # Redis service
   redis:
     image: redis:latest
     container_name: redis-comp
     ports:
       - 6379:6379
+    command: ["--requirepass", "83000000"]
     volumes:
       - redis-data:/data
     networks:
       - my-chatapp-net
 
+  # MongoDB service
   mongo:
-    image: mongo:latest
+    image: mongo
     container_name: mongo-comp
     ports:
       - 27017:27017
+    # environment:
+    # - MONGO_INITDB_ROOT_USERNAME=root
+    # - MONGO_INITDB_ROOT_PASSWORD=83000000
+
+    # restart: on-failure
+    # command: ["--auth"]
     networks:
       - my-chatapp-net
     volumes:
       - mongo-data:/data/db
+      # - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
 
+  # Elasticsearch service
   elasticsearch:
     image: elasticsearch:7.17.10
     container_name: elasticsearch-comp
     environment:
       - discovery.type=single-node
+      - ELASTIC_USERNAME=shahab
+      - ELASTIC_PASSWORD=83000000
     ports:
       - 9200:9200
+      - 9300:9300
     networks:
       - my-chatapp-net
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
 
+  # Kibana service
+  kibana:
+    image: kibana:7.17.10
+    container_name: kibana-comp
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch-comp:9200
+      - ELASTICSEARCH_HOSTS=http://elasticsearch-comp:9200
+      - ELASTICSEARCH_USERNAME="shahab"
+      - ELASTICSEARCH_PASSWORD="83000000"
+    depends_on:
+      - elasticsearch
+    ports:
+      - 5601:5601
+    networks:
+      - my-chatapp-net
+
+  # Nginx service
   nginx:
     container_name: nginx
     image: nginx:latest

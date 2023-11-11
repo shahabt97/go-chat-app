@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"go-chat-app/config"
 	"time"
 
@@ -32,7 +31,11 @@ func UtilsInitializations() (err error) {
 	defer cancel()
 
 	Client, err = mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return
+	}
 
+	err =Client.Ping(ctx,nil)
 	if err != nil {
 		return
 	}
@@ -72,9 +75,7 @@ func UtilsInitializations() (err error) {
 	FindPubMessagesOption = options.Find().SetSort(bson.D{{Key: "message", Value: 1}})
 	FindPvMessagesOption = options.Find().SetHint("senderReceiverIndex")
 
-	fmt.Println("successfully connected to mongo")
-
-	return 
+	return
 }
 
 type PublicMessage struct {
