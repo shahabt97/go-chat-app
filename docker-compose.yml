@@ -1,6 +1,5 @@
 version: "3.9"
 name: golang-chatapp
-
 services:
   # Golang application service
   chatapp-go:
@@ -13,8 +12,8 @@ services:
       - 8081:8080
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch-comp:9200
-      - ELASTICSEARCH_PASSWORD=83000000
-      - ELASTICSEARCH_USERNAME=shahab
+      # - ELASTICSEARCH_PASSWORD=83000000
+      # - ELASTICSEARCH_USERNAME=shahab
       - REDIS_URL=redis-comp:6379
       - RABBITMQ_URL=amqp://shahab:83000000@rabbitmq-comp:5672/my_chat_app
       - MONGO_URL=mongodb://mongo-comp:27017/
@@ -30,7 +29,7 @@ services:
         condition: service_started
       redis:
         condition: service_started
-
+    
   # RabbitMQ service
   rabbitmq:
     image: rabbitmq:3.13.0-rc.2-management
@@ -90,8 +89,8 @@ services:
     container_name: elasticsearch-comp
     environment:
       - discovery.type=single-node
-      - ELASTIC_USERNAME=shahab
-      - ELASTIC_PASSWORD=83000000
+      # - ELASTIC_USERNAME=shahab
+      # - ELASTIC_PASSWORD=83000000
     ports:
       - 9200:9200
       - 9300:9300
@@ -107,8 +106,8 @@ services:
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch-comp:9200
       - ELASTICSEARCH_HOSTS=http://elasticsearch-comp:9200
-      - ELASTICSEARCH_USERNAME="shahab"
-      - ELASTICSEARCH_PASSWORD="83000000"
+      # - ELASTICSEARCH_USERNAME="shahab"
+      # - ELASTICSEARCH_PASSWORD="83000000"
     depends_on:
       - elasticsearch
     ports:

@@ -26,6 +26,7 @@ var (
 	Broadcast       = make(chan *Msg, 1024)
 	OnlineUsersChan = make(chan bool, 1024)
 	ClientsMutex    = sync.RWMutex{}
+	UpgraderMutex   = sync.Mutex{}
 )
 
 func Websocket(routes *gin.Engine) {
@@ -74,7 +75,10 @@ func HandleConn(c *gin.Context) {
 	username := session.Values["username"].(string)
 	// username := GenerateRandomString(40)
 
+	// UpgraderMutex.Lock()
 	conn, err := Upgrader.Upgrade(c.Writer, c.Request, nil)
+	// time.Sleep(3 * time.Millisecond)
+	// UpgraderMutex.Unlock()
 	if err != nil {
 		fmt.Printf("error in upgrading http to websocket: %v\n", err)
 		return
@@ -89,7 +93,7 @@ func HandleConn(c *gin.Context) {
 	ClientsMutex.Unlock()
 
 	OnlineUsersChan <- true
-
+	fmt.Println("number of users are: ", len(Clients))
 	go GetPubMessages(conn, &cliData.Mu)
 
 	for {
@@ -160,6 +164,7 @@ func HandleOlineUsers() {
 		for client, cliData := range Clients {
 			go func(cl *websocket.Conn, mu *sync.Mutex) {
 				mu.Lock()
+				time.Sleep(3 * time.Millisecond)
 				if err := cl.WriteMessage(websocket.TextMessage, onlineEventJson); err != nil {
 					fmt.Println("error in sending online users: ", err)
 					cl.Close()

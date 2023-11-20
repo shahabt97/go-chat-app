@@ -37,20 +37,9 @@ func Init() (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	res, err := EsClient.Ping(EsClient.Ping.WithContext(ctx))
+	_, err = EsClient.Ping(EsClient.Ping.WithContext(ctx))
 	if err != nil {
 		return
-	}
-
-	defer res.Body.Close()
-		// fmt.Printf("res: %s\n", res.String())
-
-	// Check the status code
-	if res.IsError() {
-		// The ping request failed
-		// fmt.Printf("Error: %s\n", res.String())
-		return fmt.Errorf(res.String())
-
 	}
 
 	Client = &ElasticClient{

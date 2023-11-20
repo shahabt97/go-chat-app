@@ -12,6 +12,7 @@ import (
 	"log"
 	"math/rand"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -59,7 +60,7 @@ func TestWS(t *testing.T) {
 
 		session.Values = make(map[interface{}]interface{})
 
-		session.Values["username"] = generateRandomString(40)
+		session.Values["username"] = generateRandomString(4)
 
 		c.Set("session", session)
 
@@ -74,19 +75,23 @@ func TestWS(t *testing.T) {
 
 	for {
 
-		for i := 0; i < 200; i++ {
+		for i := 0; i < 300; i++ {
 			go func() {
 				// Create a test client with the test server URL
-				// strings.TrimPrefix(s.URL, "http")
-				wsURL := "ws" + "://localhost:8080" + "/ws"
-				fmt.Println("url is: ", wsURL)
+				// "://localhost:8080"
+				wsURL := "ws://localhost" + strings.TrimPrefix(s.URL, "http://127.0.0.1") + "/ws"
+				// fmt.Println("url is: ", wsURL)
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()
-				// time.Sleep(3 * time.Second)
 
 				mainMutex.Lock()
 				c, _, err := websocket.DefaultDialer.DialContext(ctx, wsURL, nil)
+				time.Sleep(3 * time.Millisecond)
 				mainMutex.Unlock()
+				// go func() {
+				// 	time.Sleep(60 * time.Second)
+				// 	c.Close()
+				// }()
 
 				if err != nil {
 					fmt.Printf("error in connecting to websocket server: %v\n", err)
@@ -105,7 +110,7 @@ func TestWS(t *testing.T) {
 							Username:  "ShahabTayebi",
 							Timestamp: time.Now()}}
 
-					p, err := json.Marshal(data)
+					_, err := json.Marshal(data)
 					if err != nil {
 						fmt.Printf("error in Marshaling test message to write in client test: %v\n", err)
 						return
@@ -113,11 +118,11 @@ func TestWS(t *testing.T) {
 
 					for {
 						time.Sleep(7 * time.Second)
-						err = c.WriteMessage(websocket.TextMessage, p)
-						if err != nil {
-							fmt.Printf("error in writing message in client test: %v\n", err)
-							return
-						}
+						// err = c.WriteMessage(websocket.TextMessage, []byte("hello everyone"))
+						// if err != nil {
+						// 	fmt.Printf("error in writing message in client test: %v\n", err)
+						// 	return
+						// }
 					}
 				}()
 
@@ -127,13 +132,14 @@ func TestWS(t *testing.T) {
 						fmt.Printf("error in reading message in client test: %v\n", err)
 						return
 					}
-					fmt.Printf("\n\nmessage in front is: %v \n\n", string(msg))
+					_ = msg
+					// fmt.Printf("\n\nmessage in front is: %v \n\n", string(msg))
 				}
 			}()
 
 		}
 
-		time.Sleep(20 * time.Second)
+		time.Sleep(9 * time.Second)
 	}
 
 }
