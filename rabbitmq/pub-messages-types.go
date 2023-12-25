@@ -4,17 +4,20 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	rabbit "github.com/shahabt97/rabbit-pool"
+	rabbit "github.com/shahabt97/rabbit-pool/v3"
 )
 
 type PubMessagePublishingMaster struct {
-	Mongo   *rabbit.Publisher
+	Mongo *rabbit.Publisher
 	Elastic *rabbit.Publisher
 	Redis   *rabbit.Publisher
 }
 
 type PubMessageConsumerMaster struct {
-	Mongo   <-chan amqp.Delivery
+	Mongo1 <-chan amqp.Delivery
+	Mongo2 <-chan amqp.Delivery
+	Mongo3 <-chan amqp.Delivery
+
 	Elastic <-chan amqp.Delivery
 	Redis   <-chan amqp.Delivery
 }
@@ -29,7 +32,7 @@ type MessageContent struct {
 }
 
 type Event struct {
-	EventName string                 `json:"eventName"`
-	Data      MessageContent         `json:"data"`
+	EventName string         `json:"eventName"`
+	Data      MessageContent `json:"data"`
 	// MongoId   *mongo.InsertOneResult `json:"-"`
 }

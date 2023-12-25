@@ -7,17 +7,18 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	rabbit "github.com/shahabt97/rabbit-pool"
+	rabbit "github.com/shahabt97/rabbit-pool/v3"
 )
 
 func TestPool(t *testing.T) {
 
-	conn, err := amqp.Dial("amqp://shahab:83000000@localhost:5672/my_chat_app")
-	if err != nil {
-		t.Errorf("error in connecting to rabbitMQ: %v\n", err)
-	}
+	// conn, err := amqp.Dial("amqp://shahab:83000000@localhost:5672/my_chat_app")
+	// if err != nil {
+	// 	t.Errorf("error in connecting to rabbitMQ: %v\n", err)
+	// }
 
-	pool := rabbit.NewPool(conn, 20, 15)
+	url := "amqp://shahab:83000000@localhost:5672/my_chat_app"
+	pool := rabbit.NewPool(url, 4, 20, 15)
 
 	arr := GetFromPool(pool)
 	go PutInPool(pool, arr)

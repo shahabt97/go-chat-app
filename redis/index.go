@@ -23,6 +23,7 @@ func Init() error {
 
 	client = redis.NewClient(&redis.Options{
 		Addr: config.ConfigData.RedisHost,
+		Password: "83000000",
 		DB:   0,
 	})
 

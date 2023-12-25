@@ -31,15 +31,15 @@ func TestMain(t *testing.T) {
 	consumer := &PubMessageConsumerMaster{}
 
 	err := RabbitMQInitialization(publisher, consumer)
-	time.Sleep(1 * time.Second)
 	if err != nil {
 		t.Errorf("error in starting rabbit: %v\n", err)
 	}
+	time.Sleep(1 * time.Second)
 
-	messages := PubMessageEventCreator(1000000)
+	messages := PubMessageEventCreator(2500000)
 
 	for _, message := range *messages {
-		time.Sleep(1 * time.Millisecond)
+		// time.Sleep(1 * time.Millisecond)
 		go PubMessagesPublisher(message, publisher)
 	}
 
@@ -55,7 +55,7 @@ func PubMessageEventCreator(size int) *[]*Event {
 
 		var event Event
 
-		event.Data.Message = GenerateRandomString(40)
+		event.Data.Message = GenerateRandomString(80)
 		event.EventName = "chat message"
 		event.Data.Username = GenerateRandomString(30)
 		event.Data.Timestamp = time.Now()
